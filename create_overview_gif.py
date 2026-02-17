@@ -121,7 +121,7 @@ def draw_ar(ax, frame):
         for idx, x_c in enumerate(x_positions):
             ax.text(
                 x_c, y_bot, ar_clean_tokens[idx],
-                fontsize=14, fontweight='600',
+                fontsize=14, fontweight='normal',
                 ha='center', va='center',
                 color=FINAL_TEXT_COLOR, alpha=final_alpha, zorder=5
             )
@@ -139,7 +139,7 @@ def draw_mask_diffusion(ax, frame):
         sp.set_visible(False)
 
     # Add title
-    ax.set_title("Mask Diffusion", fontsize=16, fontweight='600', pad=20, y=1.05, color=TITLE_COLOR)
+    ax.set_title("Masked Diffusion", fontsize=16, fontweight='600', pad=20, y=1.05, color=TITLE_COLOR)
 
     x_positions = np.linspace(0.04, 0.96, len(md_clean_tokens))
 
@@ -186,11 +186,15 @@ def draw_mask_diffusion(ax, frame):
     # Final clean bottom row
     if current_step == md_n_rows - 1:
         y_bot = 0.98 - (md_n_rows - 1) * (0.98 / (md_n_rows - 1))
-        final_alpha = min(1.0, t_smooth * 1.5)
+        # Only fade in during the actual transition to final step
+        if frame < md_n_rows * frames_per_step:
+            final_alpha = min(1.0, t_smooth * 1.5)
+        else:
+            final_alpha = 1.0
         for idx, x_c in enumerate(x_positions):
             ax.text(
                 x_c, y_bot, md_clean_tokens[idx],
-                fontsize=14, fontweight='600',
+                fontsize=14, fontweight='normal',
                 ha='center', va='center',
                 color=FINAL_TEXT_COLOR, alpha=final_alpha, zorder=5
             )
@@ -268,11 +272,15 @@ def draw_flm(ax, frame):
     # Final clean bottom row
     if current_step == flm_n_rows - 1:
         y_bot = 0.98 - (flm_n_rows - 1) * (0.98 / (flm_n_rows - 1))
-        final_alpha = min(1.0, t_smooth * 1.5)
+        # Only fade in during the actual transition to final step
+        if frame < flm_n_rows * frames_per_step:
+            final_alpha = min(1.0, t_smooth * 1.5)
+        else:
+            final_alpha = 1.0
         for idx, x_c in enumerate(x_positions):
             ax.text(
                 x_c, y_bot, flm_clean_tokens[idx],
-                fontsize=14, fontweight='600',
+                fontsize=14, fontweight='normal',
                 ha='center', va='center',
                 color=FINAL_TEXT_COLOR, alpha=final_alpha, zorder=5
             )
