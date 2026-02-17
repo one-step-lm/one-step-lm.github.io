@@ -3,8 +3,10 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
 
 plt.rcParams.update({
-    "font.family": "DejaVu Sans",
-    "font.size": 14,
+    "font.family": "sans-serif",
+    "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans"],
+    "font.size": 13,
+    "axes.unicode_minus": False,
 })
 
 # Data for all three animations
@@ -27,8 +29,16 @@ flm_layers_top = 30
 flm_layers_bottom = 0
 np.random.seed(1)
 
+# Color scheme
+BOX_FACE_COLOR = "#FFFFFF"
+BOX_EDGE_COLOR = "#2E86AB"
+TEXT_COLOR = "#1A1A1A"
+FINAL_TEXT_COLOR = "#000000"
+TITLE_COLOR = "#1A1A1A"
+
 # Create figure with 3 subplots side by side
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 3))
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 3.2))
+fig.patch.set_facecolor('#FAFAFA')
 
 # Maximum number of frames across all animations
 max_frames = max(ar_n_rows, md_n_rows, flm_n_rows)
@@ -41,11 +51,12 @@ def draw_ar(ax, frame):
     ax.set_ylim(-0.05, 1.15)
     ax.set_xticks([])
     ax.set_yticks([])
+    ax.set_facecolor('#FAFAFA')
     for sp in ax.spines.values():
         sp.set_visible(False)
 
     # Add title
-    ax.set_title("Autoregressive", fontweight='bold', pad=20, y=1.05)
+    ax.set_title("Autoregressive", fontsize=16, fontweight='600', pad=20, y=1.05, color=TITLE_COLOR)
 
     x_positions = np.linspace(0.04, 0.96, len(ar_clean_tokens))
     current_frame = min(frame, ar_n_rows - 1)
@@ -59,12 +70,12 @@ def draw_ar(ax, frame):
             # Box
             ax.text(
                 x_c, y, "           ",
-                ha='center', va='center', fontsize=15,
+                ha='center', va='center', fontsize=14,
                 bbox=dict(
-                    boxstyle="round,pad=0.22,rounding_size=0.22",
-                    facecolor="#FFF2E8",
-                    edgecolor="#C6A437",
-                    linewidth=0.8,
+                    boxstyle="round,pad=0.25,rounding_size=0.2",
+                    facecolor=BOX_FACE_COLOR,
+                    edgecolor=BOX_EDGE_COLOR,
+                    linewidth=1.5,
                 ),
                 zorder=1
             )
@@ -73,9 +84,9 @@ def draw_ar(ax, frame):
             if r < ar_n_rows - 1:
                 ax.text(
                     x_c, y, correct_word,
-                    fontsize=15, fontweight='medium',
+                    fontsize=14, fontweight='500',
                     ha='center', va='center',
-                    color="#111111", zorder=2
+                    color=TEXT_COLOR, zorder=2
                 )
 
     # Final clean bottom row
@@ -84,9 +95,9 @@ def draw_ar(ax, frame):
         for idx, x_c in enumerate(x_positions):
             ax.text(
                 x_c, y_bot, ar_clean_tokens[idx],
-                fontsize=15, fontweight='medium',
+                fontsize=14, fontweight='600',
                 ha='center', va='center',
-                color="#000000", zorder=5
+                color=FINAL_TEXT_COLOR, zorder=5
             )
 
 
@@ -97,11 +108,12 @@ def draw_mask_diffusion(ax, frame):
     ax.set_ylim(-0.05, 1.15)
     ax.set_xticks([])
     ax.set_yticks([])
+    ax.set_facecolor('#FAFAFA')
     for sp in ax.spines.values():
         sp.set_visible(False)
 
     # Add title
-    ax.set_title("Mask Diffusion", fontweight='bold', pad=20, y=1.05)
+    ax.set_title("Mask Diffusion", fontsize=16, fontweight='600', pad=20, y=1.05, color=TITLE_COLOR)
 
     x_positions = np.linspace(0.04, 0.96, len(md_clean_tokens))
     current_frame = min(frame, md_n_rows - 1)
@@ -115,12 +127,12 @@ def draw_mask_diffusion(ax, frame):
             # Box
             ax.text(
                 x_c, y, "           ",
-                ha='center', va='center', fontsize=15,
+                ha='center', va='center', fontsize=14,
                 bbox=dict(
-                    boxstyle="round,pad=0.22,rounding_size=0.22",
-                    facecolor="#FFF2E8",
-                    edgecolor="#C6A437",
-                    linewidth=0.8,
+                    boxstyle="round,pad=0.25,rounding_size=0.2",
+                    facecolor=BOX_FACE_COLOR,
+                    edgecolor=BOX_EDGE_COLOR,
+                    linewidth=1.5,
                 ),
                 zorder=1
             )
@@ -130,9 +142,9 @@ def draw_mask_diffusion(ax, frame):
                 word = correct_word if r >= md_unmask[idx] else "[Mask]"
                 ax.text(
                     x_c, y, word,
-                    fontsize=15, fontweight='medium',
+                    fontsize=14, fontweight='500',
                     ha='center', va='center',
-                    color="#111111", zorder=2
+                    color=TEXT_COLOR, zorder=2
                 )
 
     # Final clean bottom row
@@ -141,9 +153,9 @@ def draw_mask_diffusion(ax, frame):
         for idx, x_c in enumerate(x_positions):
             ax.text(
                 x_c, y_bot, md_clean_tokens[idx],
-                fontsize=15, fontweight='medium',
+                fontsize=14, fontweight='600',
                 ha='center', va='center',
-                color="#000000", zorder=5
+                color=FINAL_TEXT_COLOR, zorder=5
             )
 
 
@@ -158,11 +170,12 @@ def draw_flm(ax, frame):
     ax.set_ylim(-0.05, 1.15)
     ax.set_xticks([])
     ax.set_yticks([])
+    ax.set_facecolor('#FAFAFA')
     for sp in ax.spines.values():
         sp.set_visible(False)
 
     # Add title
-    ax.set_title("FLM", fontweight='bold', pad=20, y=1.05)
+    ax.set_title("FLM", fontsize=16, fontweight='600', pad=20, y=1.05, color=TITLE_COLOR)
 
     x_positions = np.linspace(0.04, 0.96, len(flm_clean_tokens))
     current_frame = min(frame, flm_n_rows - 1)
@@ -182,12 +195,12 @@ def draw_flm(ax, frame):
             # Box
             ax.text(
                 x_c, y, "           ",
-                ha='center', va='center', fontsize=15,
+                ha='center', va='center', fontsize=14,
                 bbox=dict(
-                    boxstyle="round,pad=0.22,rounding_size=0.22",
-                    facecolor="#FFF2E8",
-                    edgecolor="#C6A437",
-                    linewidth=0.8,
+                    boxstyle="round,pad=0.25,rounding_size=0.2",
+                    facecolor=BOX_FACE_COLOR,
+                    edgecolor=BOX_EDGE_COLOR,
+                    linewidth=1.5,
                 ),
                 zorder=1
             )
@@ -196,13 +209,13 @@ def draw_flm(ax, frame):
                 for layer in range(num_layers):
                     word = correct_word if rng.random() < p_clean else rng.choice(vocab)
                     dx = rng.normal(scale=jitter_scale)
-                    alpha = 0.06 * (1 - p_clean) + 0.8 * p_clean
+                    alpha = 0.06 * (1 - p_clean) + 0.85 * p_clean
 
                     ax.text(
                         x_c + dx, y, word,
-                        fontsize=15, fontweight='medium',
+                        fontsize=14, fontweight='500',
                         ha='center', va='center',
-                        color="#111111", alpha=alpha, zorder=2
+                        color=TEXT_COLOR, alpha=alpha, zorder=2
                     )
 
     # Final clean bottom row
@@ -211,9 +224,9 @@ def draw_flm(ax, frame):
         for idx, x_c in enumerate(x_positions):
             ax.text(
                 x_c, y_bot, flm_clean_tokens[idx],
-                fontsize=15, fontweight='medium',
+                fontsize=14, fontweight='600',
                 ha='center', va='center',
-                color="#000000", zorder=5
+                color=FINAL_TEXT_COLOR, zorder=5
             )
 
 
@@ -234,6 +247,6 @@ anim = FuncAnimation(
 )
 
 # Adjust layout and save
-plt.tight_layout(rect=[0, 0, 1, 0.92], pad=2.0)
-anim.save("overview.gif", writer=PillowWriter(fps=1.2))
+plt.tight_layout(rect=[0, 0, 1, 0.92], pad=2.5)
+anim.save("overview.gif", writer=PillowWriter(fps=1.25), dpi=150)
 
