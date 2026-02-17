@@ -38,14 +38,14 @@ def draw_ar(ax, frame):
     """Draw AR animation on given axis"""
     ax.clear()
     ax.set_xlim(0, 1)
-    ax.set_ylim(-0.05, 1.05)
+    ax.set_ylim(-0.05, 1.15)
     ax.set_xticks([])
     ax.set_yticks([])
     for sp in ax.spines.values():
         sp.set_visible(False)
 
     # Add title
-    ax.set_title("Autoregressive", fontweight='bold', pad=10)
+    ax.set_title("Autoregressive", fontweight='bold', pad=20, y=1.05)
 
     x_positions = np.linspace(0.04, 0.96, len(ar_clean_tokens))
     current_frame = min(frame, ar_n_rows - 1)
@@ -94,14 +94,14 @@ def draw_mask_diffusion(ax, frame):
     """Draw Mask Diffusion animation on given axis"""
     ax.clear()
     ax.set_xlim(0, 1)
-    ax.set_ylim(-0.05, 1.05)
+    ax.set_ylim(-0.05, 1.15)
     ax.set_xticks([])
     ax.set_yticks([])
     for sp in ax.spines.values():
         sp.set_visible(False)
 
     # Add title
-    ax.set_title("Mask Diffusion", fontweight='bold', pad=10)
+    ax.set_title("Mask Diffusion", fontweight='bold', pad=20, y=1.05)
 
     x_positions = np.linspace(0.04, 0.96, len(md_clean_tokens))
     current_frame = min(frame, md_n_rows - 1)
@@ -155,14 +155,14 @@ def draw_flm(ax, frame):
     """Draw FLM animation on given axis"""
     ax.clear()
     ax.set_xlim(0, 1)
-    ax.set_ylim(-0.05, 1.05)
+    ax.set_ylim(-0.05, 1.15)
     ax.set_xticks([])
     ax.set_yticks([])
     for sp in ax.spines.values():
         sp.set_visible(False)
 
     # Add title
-    ax.set_title("FLM", fontweight='bold', pad=10)
+    ax.set_title("FLM", fontweight='bold', pad=20, y=1.05)
 
     x_positions = np.linspace(0.04, 0.96, len(flm_clean_tokens))
     current_frame = min(frame, flm_n_rows - 1)
@@ -234,6 +234,6 @@ anim = FuncAnimation(
 )
 
 # Adjust layout and save
-plt.tight_layout()
+plt.tight_layout(rect=[0, 0, 1, 0.92], pad=2.0)
 anim.save("overview.gif", writer=PillowWriter(fps=1.2))
 
