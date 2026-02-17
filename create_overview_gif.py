@@ -11,6 +11,11 @@ plt.rcParams.update({
 clean_tokens = ["I", "live", "in", "New", "York"]
 unmask = [1, 2, 1, 3, 3]
 
+vocab = clean_tokens + [
+    "queens", "colors", "cloud", "sea", "waves",
+    "San", "Diego", "how", "who", "where", "zumba"
+]
+
 n_rows = 5
 x_positions = np.linspace(0.04, 0.96, len(clean_tokens))
 
