@@ -53,7 +53,7 @@
 </head>
 <body>
 
-<nav class="navbar" role="navigation" aria-label="main navigation">
+<!-- <nav class="navbar" role="navigation" aria-label="main navigation">
   <div class="navbar-brand">
     <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
       <span aria-hidden="true"></span>
@@ -71,7 +71,7 @@
     </div>
 
   </div>
-</nav>
+</nav> -->
 
 
 <section class="hero">
@@ -166,6 +166,9 @@
             We introduce Flow-based Language Models (FLM), a method that enables <strong>one-step parallel text generation</strong>
             through continuous denoising, achieving an <strong>8.3× speedup</strong> over existing approaches. FLM outperforms discrete diffusion in both quality and speed.
           </p>
+          <sheel-comment>
+            Add 8.3x figure here
+          </sheel-comment>
         </div>
       </div>
     </div>
@@ -177,16 +180,18 @@
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
           <p>
-            <sheel-comment>I have used a different abstract than what we have written in the paper. Trying to compare to AR too.</sheel-comment>
-            Unlike autoregressive models that generate tokens sequentially, FLM leverages flow matching to
-            directly map noise to coherent text in as few as just 1 step. Our key insight is that continuous denoising
-            in the one-hot space enables more effective flow-based generation compared to discrete
-            diffusion approaches. We introduce flow map distillation (FLM-distill), which distills multi-step
-            flow models into efficient one-step generators while preserving generation quality.
+            Language models based on discrete diffusion have attracted interest for their potential for faster generation than autoregressive models. 
+            In practice, however, they are challenged by a sharp degradation of sample quality in the few-step regime.
           </p>
           <p>
-            We demonstrate our approach through extensive experiments on the OpenWebText and 1-Billion Words (LM1B) datasets. Our one-step FLM-distill model matches
-            the quality of state-of-the-art 8-step discrete diffusion models, calling into question the widely held hypothesis that discrete diffusion processes are necessary for generative modeling over discrete modalities.
+            We show that language models leveraging flow-based continuous denoising can outperform discrete diffusion in both quality and speed. 
+            By revisiting the fundamentals of flows over discrete modalities, we build a flow-based language model (FLM) that performs Euclidean denoising on one-hot token representations. 
+            The model is trained to predict clean data via multi-token classification, leveraging a simple time reparameterization that greatly improves training and generation.
+          </p>
+          <p>
+            By distilling FLM into its associated flow map, we obtain a distilled language model (FLM-Distill) capable of few-step generation. 
+            On the LM1B and OWT language datasets, FLM attains generation quality competitive with state-of-the-art discrete diffusion models. With FLM-Distill, we outperform recent few-step language models across the board, with <i>one-step generation</i> already approaching their 8-step quality.
+            Our work calls into question the widely held hypothesis that discrete diffusion processes are necessary for generative modeling over discrete modalities, and paves the way toward accelerated flow-based language modeling at scale.
           </p>
         </div>
       </div>
@@ -195,8 +200,50 @@
 
   </div>
 </section>
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Flow-based Language Model</h2>
+        <div class="content has-text-justified">
+          <p>
+            FLM applies the benefits of continuous image generation in discrete state spaces by encoding
+            text as one-hot vectors and using flow matching to directly map noise to one-hot data.
+            FLM uses the same multi-token classification objective as discrete diffusion models, but instead of 
+            updating the discrete state from one-token to another, FLM gradually denoises all tokens in parallel.
+            This enables FLM to represent a superposition of sequences while also capturing correlations between tokens &#8212;
+            a fundamental bottleneck with discrete diffusion models in the few-step regime. 
+            <sheel-comment>Add overview gif here.</sheel-comment>
+          </p>
+          <p>
+            We revisit the fundamentals of flows over discrete modalities and leverage a novel time-reparametrization
+            to enable efficient training of FLM. Finally, we use Flow Map Distillation to distill our multi-step flow model into its associated flow map (FLM-distill), 
+            enabling one-step generation with minimal loss in quality.
+          </p>
+          <p>
+            <img src="figures/combined_diffusion_comparison.png" alt="Comparison between FLM and Discrete Diffusion" width="100%">
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">One-step Generated Samples</h2>
+        <div class="content has-text-justified">
+          <sheel-comment>Add one-step generated samples here. @Manan copy samples from figure 7 in paper and ask Claude to put it in a nice format (keep red color highlighting too)</sheel-comment>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+          
 
+<sheel-comment>Ignore stuff below this point</sheel-comment>
 <section class="section">
   <div class="container is-max-desktop">
 
