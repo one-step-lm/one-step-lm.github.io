@@ -75,4 +75,18 @@ $(document).ready(function() {
 
     bulmaSlider.attach();
 
+    // Initialize FMLM carousel with autoplay
+    var fmlmOptions = {
+		slidesToScroll: 1,
+		slidesToShow: 1,
+		loop: true,
+		infinite: true,
+		autoplay: true,
+		autoplaySpeed: 5000,  // 5 seconds per slide
+		pauseOnHover: true
+    };
+
+    // Initialize FMLM carousel
+    var fmlmCarousel = bulmaCarousel.attach('.fmlm-carousel', fmlmOptions);
+
 })

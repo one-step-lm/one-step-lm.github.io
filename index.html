@@ -151,13 +151,112 @@
       border-top: 1px solid #e0e0e0;
       margin: 0;
     }
+    
+    /* FMLM Carousel Styles */
+    .fmlm-carousel {
+      width: 100%;
+      margin-top: 12px;
+    }
+    
+    .fmlm-carousel .item-1,
+    .fmlm-carousel .item-2,
+    .fmlm-carousel .item-3,
+    .fmlm-carousel .item-4 {
+      padding: 0;
+    }
+
+    /* 1. The Container: Stacks all items in the same cell */
+    .fmlm-carousel {
+      display: grid;
+      /* This creates one cell where all items sit on top of each other */
+      grid-template-areas: "stack"; 
+      overflow: hidden; /* optional: crops content */
+    }
+
+    /* 2. The Items: positioned in that stack */
+    .carousel-item {
+      grid-area: stack; /* Force every item into the same grid cell */
+      
+      /* The Transition Magic */
+      opacity: 1;
+      transition: opacity 0.8s ease-in-out;
+      
+      /* Ensure the active slide is clickable */
+      pointer-events: auto;
+      z-index: 1;
+    }
+
+    /* 3. The Hidden State: Transparent, not "gone" */
+    .fmlm-carousel .hidden {
+      /* display: none;  <-- DELETE THIS */
+      
+      opacity: 0;       /* Make it transparent */
+      z-index: -1;      /* Send it to the back */
+      pointer-events: none; /* Make unclickable so you can click the slide below */
+    }
+    
+    /* .fmlm-carousel .sample-content {
+      padding: 8px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: #1a1a2e;
+    } */
+    
+    .fmlm-carousel .carousel-navigation {
+      display: none; /* Hide navigation for auto-sliding */
+    }
+
+    /* Container for the footer controls */
+    .sample-box .sample-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #ddd; /* Subtle separator line */
+      font-family: 'Google Sans', 'Noto Sans', sans-serif; /* Matches header font */
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    /* The "Sample 1/4" text */
+    .sample-box .slide-counter {
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      color: #999;
+    }
+
+    /* The Button Styling */
+    .sample-box .nav-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 700;
+      color: #888;
+      padding: 4px 8px;
+      transition: color 0.2s ease;
+    }
+
+    /* Hover Effect using your 'Ours' blue */
+    .sample-box .nav-btn:hover {
+      color: #4a9eff;
+    }
+
+    /* Visual divider between buttons */
+    .sample-box .divider {
+      color: #ddd;
+      font-weight: 300;
+    }
   </style>
   
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
   <script defer src="./static/js/fontawesome.all.min.js"></script>
   <script src="./static/js/bulma-carousel.min.js"></script>
   <script src="./static/js/bulma-slider.min.js"></script>
-  <script src="./static/js/index.js"></script>
+  <!-- <script src="./static/js/index.js"></script> -->
+  <script src="./static/js/show_generations.js" defer></script>
 </head>
 <body>
   
@@ -556,7 +655,46 @@
               <span class="model-name">FMLM (Ours)</span>
               <span class="metrics">Gen. PPL: <strong><span class="good-text">95.47</span></strong> &nbsp;|&nbsp; Entropy: <strong><span class="good-text">4.10</span></strong></span>
             </div>
-            [CLS] had been unable to allow them to go outside the court. [CLS] this is for the court it deserves. [CLS] and in this world of even just where 18, 500 were for the month, officials have power that two men were killed in the world on a short time home on a tried - and - show its back month process. [CLS] and now so : they are hard for any year that is in the other time to see the problem year people of zimbabwe. [CLS] an independent team of top scientists could be sent on the more year of a decade - in with john's "city," on the next government, the agency [CLS]
+            <div class="carousel fmlm-carousel">
+              <div class="carousel-item item-1">
+                <div class="sample-content">
+                  [CLS] had been unable to allow them to go outside the court. [CLS] this is for the court it deserves. [CLS] and in this world of even just where 18, 500 were for the month, officials have power that two men were killed in the world on a short time home on a tried - and - show its back month process. [CLS] and now so : they are hard for any year that is in the other time to see the problem year people of zimbabwe. [CLS] an independent team of top scientists could be sent on the more year of a decade - in with john's "city," on the next government, the agency [CLS]
+                </div>
+              </div>
+              <div class="carousel-item item-2 hidden">
+                <div class="sample-content">
+                  [CLS] be that people in the community, now this would give me for less. [CLS] it's that but the second of the film will have been them there while some of them are not get them for week. [CLS] at any in his own country, he was no one who had working money, if there had be no at the first of two of what real not think that's life in white is the best, i think, don't the right of his, but they can could make it not for or for a high - business team. [CLS] if she said that women, many years she was not expected to say [CLS]
+                </div>
+              </div>
+              <div class="carousel-item item-3 hidden">
+                <div class="sample-content">
+                  [CLS] began when the florida department of had and wildlife issued the report. [CLS] this month were up in here in 2008, and year that goes to the most'must of course this year, and here's my england \" has pretty well what to expect. [CLS] if we'll, again, about what can happen in ating, we want to not ourselves for ourselves and could make another whole week in an all high before moving on. [CLS] news, where, in public if they wish, defense officials said. [CLS] within there and maybe not they have interfered with his time. [CLS] sales in support - which has been rising through [CLS]
+                </div>
+              </div>
+              <div class="carousel-item item-4 hidden">
+                <div class="sample-content">
+                  [CLS] was to be to the rescue, but there's no doubt that we could offer to help. " [CLS] all the facts are not known. [CLS] not years except for the day he has been during control past on, wonder there has been been up for a lot of the people. [CLS] the 10, are after this that it needs to be with what you have a fire's. [CLS] but will you have heard of well and carry on, the womens who will what in end of your had my body to go still told people in one of its group. [CLS] she was the double - being for just because we went [CLS]
+                </div>
+              </div>
+              <div class="carousel-item item-5 hidden">
+                <div class="sample-content">
+                  [CLS] never - hard victory that could top two place because of time over the weekend to respond to the head of the judges, who said which presided over by both players had to put themselves in charge of the nation. [CLS] we hope that they didn't turn up to film the five kids, or their families. [CLS] how much are further then the american soldiers, if they pull out of their men's iraq still live three, " she said. [CLS] they also plan to pass on the ball back, and the investigation is long. [CLS] toyota said its first exports to china in the early 1990s. [CLS] no court to change that [CLS]
+                </div>
+              </div>
+              <div class="carousel-item item-6 hidden">
+                <div class="sample-content">
+                  [CLS] the public and private sectors, especially the condition that they'be in on. [CLS] i was on tour and i'm trying to tell myself he was no 8 ; he won just one against how to the people to get to the finals and yes, the rest of ireland - - youon also have senior people in the american squad. [CLS] in this respect, it's kind of " public " that's worse for worse than that four million americans who tend to call 2006's security as a threat or a real threat than the taliban was. [CLS] he might have found him on, that he should, that there [CLS]
+                </div>
+              </div>
+            </div>
+            <div class="sample-footer">
+                <span class="slide-counter">Sample 1 / 6</span>
+                <div class="nav-controls">
+                    <button class="nav-btn" id="prevBtn" aria-label="Previous">← Prev</button>
+                    <span class="divider">|</span>
+                    <button class="nav-btn" id="nextBtn" aria-label="Next">Next →</button>
+                </div>
+            </div>
           </div>
           
           <div class="sample-box">
