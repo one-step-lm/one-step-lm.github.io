@@ -369,7 +369,7 @@
           <h2 class="title is-5">TL;DR</h2>
           <div class="content has-text-justified">
             <p>
-              We introduce Flow-based Language Models (FLM), a method that enables <strong>one-step parallel text generation</strong>
+              We introduce <strong>Flow-based Language Model (FLM)</strong> and <strong>Flow-map Language Models (FMLM)</strong>, a method that enables <strong>one-step parallel text generation</strong>
               through continuous denoising, achieving an <strong>8.3× speedup</strong> over existing approaches. FLM outperforms discrete diffusion in both quality and speed.
             </p>
             <figure class="image" style="margin: 24px 0;">
@@ -395,11 +395,11 @@
             </p>
             <p>
               We show that language models leveraging <strong>flow-based continuous denoising</strong> can outperform discrete diffusion in both quality and speed.
-              By revisiting the fundamentals of flows over discrete modalities, we build a flow-based language model (<strong>FLM</strong>) that performs Euclidean denoising on one-hot token representations.
+              By revisiting the fundamentals of flows over discrete modalities, we build <strong>Flow-based Language Model (FLM)</strong> that performs Euclidean denoising on one-hot token representations.
               The model is trained to predict clean data via multi-token classification, leveraging a simple time reparameterization that greatly improves training and generation.
             </p>
             <p>
-              By distilling FLM into its associated <em>flow map</em>, we obtain a flow-map language model (<strong>FMLM</strong>) capable of few-step generation.
+              By distilling FLM into its associated <em>flow map</em>, we obtain <strong>Flow-map Language Model (FMLM)</strong> capable of few-step generation.
               On the LM1B and OWT language datasets, FLM attains generation quality competitive with state-of-the-art discrete diffusion models.
               With FMLM, we outperform recent few-step language models across the board, achieving state-of-the-art performance in both few (1,2,4,8) and many (512,1024) steps.
               Our work calls into question the widely held hypothesis that discrete diffusion processes are necessary for generative modeling over discrete modalities, and paves the way toward accelerated flow-based language modeling at scale.
@@ -415,13 +415,13 @@
   <center><img src="figures/overview.gif" width="85%" ></center>
   
   <section class="section">
-    <div class="container is-max-desktop">
+    <div class="container is-max-desktop" style="max-width: 1200px;">
       <div class="columns is-centered has-text-centered">
         <div class="column is-10">
           <h2 class="title is-3">Flow-based Language Models</h2>
           <div class="content has-text-justified">
             <figure class="image" style="margin: 24px 0;">
-              <img src="figures/overview.png" style="">
+              <img src="figures/overview.png" style="width: 100%;">
               <!-- <figcaption class="has-text-centered" style="margin-top: 10px; font-size: 0.85rem; color: #666;">
                 <strong>Comparison to baselines.</strong>
                 FLM outperforms state-of-the-art baselines in both quality and speed.
