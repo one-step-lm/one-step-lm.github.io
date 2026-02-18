@@ -60,6 +60,11 @@ function updateCarousel(newIndex) {
   }
 }
 
+// Initialize counter on page load
+if (counter) {
+  counter.textContent = `Sample ${currentIndex + 1} / ${items.length}`;
+}
+
 // Event Listeners
 nextBtn.addEventListener('click', () => {
   updateCarousel(currentIndex + 1);
