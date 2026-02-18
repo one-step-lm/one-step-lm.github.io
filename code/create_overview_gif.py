@@ -40,6 +40,7 @@ TEXT_COLOR = "#1A1A1A"
 FINAL_TEXT_COLOR = "#000000"
 TITLE_COLOR = "#1A1A1A"
 HIGHLIGHT_COLOR = "#FF6B6B"  # Light red for masked diffusion highlights
+MASK_COLOR = "#888888"  # Grey color for masked tokens
 
 # Create figure with 4 subplots side by side
 fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(20, 3.2))
@@ -179,7 +180,7 @@ def draw_mask_diffusion(ax, frame):
 
             # Mask / token logic
             if r < md_n_rows - 1:
-                word = correct_word if r >= md_unmask[idx] else "[Mask]"
+                word = correct_word if r >= md_unmask[idx] else "[mask]"
                 # Highlight "New" and "Diego" in light red (only when revealed)
                 text_color = HIGHLIGHT_COLOR if word in ["New", "Diego"] else TEXT_COLOR
                 ax.text(
