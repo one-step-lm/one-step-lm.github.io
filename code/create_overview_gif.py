@@ -25,12 +25,12 @@ md_n_rows = 4
 # FLM configuration
 flm_clean_tokens = ["I", "live", "in", "New", "York"]
 flm_n_rows = 4
-flm_layers_top = 30
+flm_layers_top = 10
 flm_layers_bottom = 0
 
 # FLM-Distill configuration
 flm_distill_clean_tokens = ["I", "live", "in", "New", "York"]
-flm_distill_layers = 30
+flm_distill_layers = 10
 np.random.seed(1)
 
 # Color scheme
@@ -236,7 +236,7 @@ def draw_flm(ax, frame):
 
     for r in range(current_step + 1):
         y = 0.98 - r * (0.98 / (flm_n_rows - 1))
-        p_clean = (r / (flm_n_rows - 1)) ** 3
+        p_clean = (r / (flm_n_rows - 1)) ** 2
         jitter_scale = 0.01 * (1 - p_clean)
         num_layers = layers_for_row(r)
 
