@@ -25,12 +25,12 @@ md_n_rows = 4
 # FLM configuration
 flm_clean_tokens = ["I", "live", "in", "New", "York"]
 flm_n_rows = 4
-flm_layers_top = 30
+flm_layers_top = 10
 flm_layers_bottom = 0
 
 # FLM-Distill configuration
 flm_distill_clean_tokens = ["I", "live", "in", "New", "York"]
-flm_distill_layers = 30
+flm_distill_layers = 10
 np.random.seed(1)
 
 # Color scheme
@@ -40,6 +40,7 @@ TEXT_COLOR = "#1A1A1A"
 FINAL_TEXT_COLOR = "#000000"
 TITLE_COLOR = "#1A1A1A"
 HIGHLIGHT_COLOR = "#FF6B6B"  # Light red for masked diffusion highlights
+MASK_COLOR = "#888888"  # Grey color for masked tokens
 
 # Create figure with 4 subplots side by side
 fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(20, 3.2))
@@ -179,7 +180,7 @@ def draw_mask_diffusion(ax, frame):
 
             # Mask / token logic
             if r < md_n_rows - 1:
-                word = correct_word if r >= md_unmask[idx] else "[Mask]"
+                word = correct_word if r >= md_unmask[idx] else "[mask]"
                 # Highlight "New" and "Diego" in light red (only when revealed)
                 text_color = HIGHLIGHT_COLOR if word in ["New", "Diego"] else TEXT_COLOR
                 ax.text(
@@ -236,7 +237,7 @@ def draw_flm(ax, frame):
 
     for r in range(current_step + 1):
         y = 0.98 - r * (0.98 / (flm_n_rows - 1))
-        p_clean = (r / (flm_n_rows - 1)) ** 3
+        p_clean = (r / (flm_n_rows - 1)) ** 2
         jitter_scale = 0.01 * (1 - p_clean)
         num_layers = layers_for_row(r)
 
@@ -307,7 +308,7 @@ def draw_flm_distill(ax, frame):
         sp.set_visible(False)
 
     # Add title
-    ax.set_title("FLM-Distill (Ours)", fontsize=16, fontweight='600', pad=20, y=1.05, color=TITLE_COLOR)
+    ax.set_title("FMLM (Ours)", fontsize=16, fontweight='600', pad=20, y=1.05, color=TITLE_COLOR)
 
     x_positions = np.linspace(0.04, 0.96, len(flm_distill_clean_tokens))
 
@@ -377,7 +378,7 @@ def draw_flm_distill(ax, frame):
             arrow_alpha = 1.0
 
         ax.annotate('', xy=(0.5, 0.15), xytext=(0.5, 0.90),
-                    arrowprops=dict(arrowstyle='->', lw=3, color=BOX_EDGE_COLOR, alpha=arrow_alpha))
+                    arrowprops=dict(arrowstyle='->', lw=1.5, color='black', alpha=arrow_alpha))
 
     # Final row (clean) - visible after step 2
     if current_step >= 2:
@@ -432,5 +433,5 @@ anim = FuncAnimation(
 
 # Adjust layout and save
 plt.tight_layout(rect=[0, 0, 1, 0.92], pad=2.5)
-anim.save("figures/overview.gif", writer=PillowWriter(fps=10), dpi=150)
+anim.save("../figures/overview.gif", writer=PillowWriter(fps=10), dpi=150)
 
