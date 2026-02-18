@@ -307,7 +307,7 @@ def draw_flm_distill(ax, frame):
         sp.set_visible(False)
 
     # Add title
-    ax.set_title("FLM-Distill (Ours)", fontsize=16, fontweight='600', pad=20, y=1.05, color=TITLE_COLOR)
+    ax.set_title("FMLM (Ours)", fontsize=16, fontweight='600', pad=20, y=1.05, color=TITLE_COLOR)
 
     x_positions = np.linspace(0.04, 0.96, len(flm_distill_clean_tokens))
 
@@ -377,7 +377,7 @@ def draw_flm_distill(ax, frame):
             arrow_alpha = 1.0
 
         ax.annotate('', xy=(0.5, 0.15), xytext=(0.5, 0.90),
-                    arrowprops=dict(arrowstyle='->', lw=3, color=BOX_EDGE_COLOR, alpha=arrow_alpha))
+                    arrowprops=dict(arrowstyle='->', lw=1.5, color='black', alpha=arrow_alpha))
 
     # Final row (clean) - visible after step 2
     if current_step >= 2:
@@ -432,5 +432,5 @@ anim = FuncAnimation(
 
 # Adjust layout and save
 plt.tight_layout(rect=[0, 0, 1, 0.92], pad=2.5)
-anim.save("figures/overview.gif", writer=PillowWriter(fps=10), dpi=150)
+anim.save("../figures/overview.gif", writer=PillowWriter(fps=10), dpi=150)
 
