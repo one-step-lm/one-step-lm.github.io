@@ -884,12 +884,21 @@
             </p>
           </div>
 
-          <h3>Semigroup Distillation</h3>
+          <h3>Three Distillation Objectives</h3>
 
           <p>
+            There are three equivalent mathematical characterizations of the flow map, each giving rise
+            to a different distillation objective. All three are valid&mdash;they characterize the same
+            object&mdash;but they build the teacher signal in fundamentally different ways.
+          </p>
+
+          <p>
+            <strong>Semigroup.</strong>
+            The teacher is a convex combination of two shorter jumps:
+            $\bar{\delta}_{s,t} = \gamma\,\hat{\delta}_{s,u}(I_s) + (1{-}\gamma)\,\hat{\delta}_{u,t}(X_{s,u}(I_s))$.
+            Composing two shorter jumps must equal one longer jump.
             The distillation proceeds progressively: starting from the pretrained velocity field (which makes infinitesimal steps),
-            the model learns to compose small jumps into larger ones via the semigroup consistency loss.
-            Over training, it learns to make bigger and bigger leaps&mdash;until a single jump from $t{=}0$ to $t{=}1$ produces coherent text.
+            the model learns to compose small jumps into larger ones&mdash;until a single jump from $t{=}0$ to $t{=}1$ produces coherent text.
           </p>
 
           <div class="video-container" style="max-width: 600px;">
@@ -897,12 +906,73 @@
               <source src="videos/progressive_distillation_animation.mp4" type="video/mp4">
             </video>
             <p class="vid-caption">
-              <strong>Progressive flow map distillation.</strong>
-              The flow map is distilled via semigroup consistency: composing two shorter jumps
-              must equal one longer jump. This progressively teaches the model to take larger steps,
-              culminating in one-step generation.
+              <strong>Semigroup distillation.</strong>
+              The teacher is a convex combination of two shorter jumps on the simplex.
+              No derivatives needed&mdash;only forward evaluations.
             </p>
           </div>
+
+          <p>
+            <strong>Lagrangian.</strong>
+            The teacher follows the "particle" forward along the flow.
+            It is built by transporting $I_s$ forward to $X_{s,t}(I_s)$, applying the pretrained denoiser
+            $D_t$ there, and applying a derivative correction:
+          </p>
+
+          $$\bar{\delta}_{s,t} = D_t(X_{s,t}(I_s)) - \tfrac{(1-t)(t-s)}{1-s}\,\partial_t \hat{\delta}_{s,t}(I_s)$$
+
+          <div class="video-container" style="max-width: 600px;">
+            <video autoplay loop muted playsinline>
+              <source src="videos/lagrangian_distillation_animation.mp4" type="video/mp4">
+            </video>
+            <p class="vid-caption">
+              <strong>Lagrangian distillation.</strong>
+              The teacher is constructed by transporting $I_s$ forward along the flow, applying the
+              pretrained denoiser at the transported point, and correcting with $\partial_t \hat{\delta}$.
+              This corresponds to methods like terminal velocity matching.
+            </p>
+          </div>
+
+          <p>
+            <strong>Eulerian.</strong>
+            The teacher stays at the starting point and uses derivative information.
+            It is built from the pretrained denoiser at $I_s$&mdash;no transport needed&mdash;corrected
+            by the Jacobian of the student:
+          </p>
+
+          $$\bar{\delta}_{s,t} = D_s(I_s) + \tfrac{t-s}{1-t}\Big((1{-}s)\,\partial_s \hat{\delta}_{s,t}(I_s) + (D_s(I_s) - I_s) \cdot \nabla \hat{\delta}_{s,t}(I_s)\Big)$$
+
+          <div class="video-container" style="max-width: 600px;">
+            <video autoplay loop muted playsinline>
+              <source src="videos/eulerian_distillation_animation.mp4" type="video/mp4">
+            </video>
+            <p class="vid-caption">
+              <strong>Eulerian distillation.</strong>
+              The teacher uses the pretrained denoiser at the starting point&mdash;no
+              transport needed&mdash;corrected by the Jacobian of the student.
+              This corresponds to methods like consistency models and MeanFlow.
+            </p>
+          </div>
+
+          <div class="key-idea">
+            <strong>Why semigroup?</strong>
+            The semigroup teacher is a convex combination and always stays on the probability simplex, requiring
+            only forward evaluations&mdash;no Jacobian-vector products.
+            The Lagrangian and Eulerian teachers require JVPs and may transiently leave the simplex due to
+            derivative correction terms.
+            Empirically, the semigroup objective achieves <strong>119 generative perplexity</strong> vs.
+            193 for the Lagrangian&mdash;we conjecture the latter needs additional regularization
+            to keep predictions on the simplex.
+            We use semigroup distillation for all our main results.
+          </div>
+
+          <p>
+            All three objectives also have <strong>self-distillation</strong> variants (Prop. C.11 in the paper), where the model
+            trains from scratch without a pretrained teacher: the diagonal term becomes standard flow matching
+            (cross-entropy to one-hot data), and the off-diagonal teacher uses the model's own predictions.
+            This connects the Eulerian self-distillation to <em>consistency models</em> and <em>MeanFlow</em>,
+            and the Lagrangian self-distillation to <em>terminal velocity matching</em>.
+          </p>
 
           <!-- Section 7 -->
           <h2 id="putting-it-together"><span class="section-number">7.</span> Putting It All Together</h2>
