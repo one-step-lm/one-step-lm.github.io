@@ -84,6 +84,10 @@
       transition: background 0.3s, color 0.3s;
     }
 
+    strong, b {
+      color: inherit;
+    }
+
     /* ── Sticky Header ── */
     .sticky-header {
       position: fixed;
@@ -978,14 +982,14 @@
           <h2 id="results"><span class="section-number">8.</span> Results</h2>
 
           <p>
-            We evaluate on two standard benchmarks: <strong>LM1B</strong> (One Billion Word) and <strong>OpenWebText</strong>,
+            We evaluate on two standard benchmarks: <strong>LM1B</strong> (One Billion Word) and <strong>OpenWebText</strong> (OWT),
             measuring generative perplexity (lower is better) and entropy (should match the dataset's entropy).
           </p>
 
           <h3>Many-step generation</h3>
           <p>
             At 1024 steps, FLM already outperforms all discrete diffusion baselines, achieving <strong>96.91</strong> perplexity
-            on LM1B (vs. 98.14 for the best baseline, Duo) and <strong>62.23</strong> on OpenWebText (vs. 77.69).
+            on LM1B (vs. 98.14 for the best baseline, Duo) and <strong>62.23</strong> on OWT (vs. 77.69).
             This shows that continuous flows are not just useful for speedup&mdash;they produce better samples even in the
             many-step regime.
           </p>
@@ -1006,14 +1010,16 @@
 
           <div class="key-idea">
             <strong>Headline result:</strong>
-            One-step FMLM achieves <strong>104 perplexity</strong> on LM1B, matching the <strong>8-step quality of distilled discrete diffusion</strong> models&mdash;an
-            <strong>8x speedup</strong>. Two-step FMLM (95 perplexity) even outperforms 8-step discrete baselines.
+            One-step FMLM achieves <strong>119 perplexity</strong> on LM1B,
+            exceeding the <strong>8-step quality of distilled discrete diffusion</strong> models&mdash;an
+            <strong>8x speedup</strong>.
+            At 4 steps, FMLM reaches <strong>98.76</strong> perplexity, outperforming even the best discrete baseline at 1024 steps.
           </div>
 
           <p>
             Qualitatively, the difference is even more striking. At one step, discrete diffusion baselines produce
-            either garbled text (random word combinations) or degenerate text (endless repetitions of common tokens like commas).
-            FMLM generates coherent, grammatically reasonable sentences with proper structure.
+            either garbled text (perplexity &gt;1200) or degenerate text (entropy collapse to 3.79).
+            FMLM generates coherent, grammatically reasonable sentences while maintaining entropy close to the dataset.
           </p>
 
           <figure class="blog-figure">
@@ -1031,8 +1037,33 @@
           <ul>
             <li><strong>Denoiser + cross-entropy</strong> vs. velocity + MSE: 97 vs. 3801 perplexity. The parameterization is everything.</li>
             <li><strong>Time reparameterization</strong>: Without it, perplexity jumps from 107 to 149. Redistributing training time is critical for large vocabularies.</li>
-            <li><strong>One-hot encoding</strong> outperforms learned or pretrained embeddings&mdash;the simplex geometry is the right inductive bias.</li>
+            <li><strong>One-hot encoding</strong> outperforms all learned and pretrained embeddings&mdash;the simplex geometry is the right inductive bias.</li>
+            <li><strong>Autoguidance</strong>: FLM with guidance reaches <strong>51.62</strong> perplexity on LM1B, while discrete baselines collapse under the same guidance strength.</li>
           </ul>
+
+          <figure class="blog-figure">
+            <img src="../figures/autoguidance_plot.png" alt="Autoguidance stability comparison">
+            <figcaption>
+              <strong>Autoguidance stability.</strong>
+              FLM remains stable across a wide range of guidance scales &eta;, with autoguidance systematically improving sample quality (Gen. PPL down to 51.62 at &eta;&nbsp;=&nbsp;50).
+              Discrete baselines (Duo, MDLM) collapse at &eta;&nbsp;&ge;&nbsp;10, with perplexity exceeding 1000 and entropy dropping below 3.9.
+            </figcaption>
+          </figure>
+
+          <p>
+            Beyond unconditional generation, continuous flows also enable <strong>reward-guided generation</strong>.
+            By plugging in classifiers for attributes like topic, grammaticality, sentiment, and safety,
+            FLM and FMLM can steer generation toward desired properties&mdash;even at very few steps.
+          </p>
+
+          <figure class="blog-figure">
+            <img src="../figures/guidance_plot.png" alt="Reward-guided generation results">
+            <figcaption>
+              <strong>Reward-guided generation.</strong>
+              Reward scores (top) and generative perplexity (bottom) across sampling steps for four attributes.
+              FLM/FMLM maintains high reward scores with low perplexity, while discrete baselines degrade sharply at fewer steps.
+            </figcaption>
+          </figure>
 
           <h2 style="margin-top: 56px;">Looking Forward</h2>
 
