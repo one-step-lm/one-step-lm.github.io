@@ -75,7 +75,11 @@ We can visualize the learned **velocity field** directly on the simplex. At each
 
 A standard flow matching model predicts a **velocity**, which describes a direction to move in continuous space. But for language, we discovered that predicting the velocity directly is a bad idea. The vocabulary is huge ($|V| \approx 50{,}000$), so the velocity lives in a very high-dimensional space, and standard regression losses (like mean squared error) struggle to learn it.
 
-Instead, we reparameterize the model as a **denoiser**. Given a noisy intermediate state $I_t$, the model predicts what the *clean data* $\mathbf{x}_1$ should be. Mathematically, the optimal denoiser equals the posterior probability over tokens: $D_t(\mathbf{x}) = p(\mathbf{x}_1 | I_t = \mathbf{x})$. This lives on the probability simplex, so we can use a **softmax output** and train with a **cross-entropy loss**. Unlike standard flow matching, which is learned via regression, this means that we learn our model by solving a classification problem.
+Instead, we reparameterize the model as a **denoiser**. Given a noisy intermediate state $I_t$, the model predicts what the *clean data* $\mathbf{x}_1$ should be. Mathematically, the optimal denoiser equals the posterior probability over tokens: $D_t(\mathbf{x}) = p(\mathbf{x}_1 | I_t = \mathbf{x})$. This lives on the probability simplex, so we can constrain the model output via a tokenwise softmax and train with a **cross-entropy loss**,
+
+$$\mathcal{L}_{\mathsf{CE}}(\hat{D}) = \int_0^1 \mathbb{E}_{\mathbf{x}_0, \mathbf{x}_1}\Big[-\sum_{l=1}^L \log \hat{p}_{1|t}^l(\mathbf{x}_1^l \mid I_t)\Big]\,dt,$$
+
+where $\hat{p}_{1|t}^l$ is the model's predicted posterior for the $l$-th token. Unlike standard flow matching, which is learned via regression, this means that we learn our model by solving a classification problem.
 
 <!-- VIDEO PAIR -->
 <!-- VIDEO: videos/denoiser_animation.mp4 -->

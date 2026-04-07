@@ -803,7 +803,13 @@
             Instead, we reparameterize the model as a <strong>denoiser</strong>.
             Given a noisy intermediate state $I_t$, the model predicts what the <em>clean data</em> $\mathbf{x}_1$ should be.
             Mathematically, the optimal denoiser equals the posterior probability over tokens: $D_t(\mathbf{x}) = p(\mathbf{x}_1 | I_t = \mathbf{x})$.
-            This lives on the probability simplex, so we can use a <strong>softmax output</strong> and train with a <strong>cross-entropy loss</strong>.
+            This lives on the probability simplex, so we can constrain the model output via a tokenwise softmax and train with a <strong>cross-entropy loss</strong>,
+          </p>
+
+          $$\mathcal{L}_{\mathsf{CE}}(\hat{D}) = \int_0^1 \mathbb{E}_{\mathbf{x}_0, \mathbf{x}_1}\Big[-\sum_{l=1}^L \log \hat{p}_{1|t}^l(\mathbf{x}_1^l \mid I_t)\Big]\,dt,$$
+
+          <p>
+            where $\hat{p}_{1|t}^l$ is the model's predicted posterior for the $l$-th token.
             Unlike standard flow matching, which is learned via regression, this means that we learn our model by solving a classification problem.
           </p>
 
