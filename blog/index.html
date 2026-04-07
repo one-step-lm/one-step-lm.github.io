@@ -528,8 +528,8 @@
       <a href="../index.html" class="back-link">&larr; Back to project page</a>
       <h1 class="blog-title">How to Generate Text in One Step</h1>
       <p class="blog-subtitle">
-        Diffusion language models promise fast parallel text generation, but they fall apart with few sampling steps.
-        We show how continuous flows fix this, enabling coherent text generation in a single forward pass.
+        Discrete diffusion language models promise fast parallel text generation, but they fall apart with few sampling steps.
+        We show how continuous flows fix this, enabling coherent, high-quality text generation in a single forward pass of the model.
       </p>
       <p class="blog-meta">
         Based on <a href="https://arxiv.org/abs/2602.16813"><em>Flow Map Language Models: One-step Language Modeling via Continuous Denoising</em></a>
@@ -604,13 +604,14 @@
           <h2 id="the-dream"><span class="section-number">1.</span> The Dream: Parallel Text Generation</h2>
 
           <p>
-            Autoregressive language models like GPT generate text one token at a time, each token depending on all previous ones.
-            This is a bottleneck: generating a 128-token sentence requires 128 sequential forward passes through the model.
+            Autoregressive language models like ChatGPT and Claude generate text one token at a time, with the generation of each new token depending on all previous ones.
+            This is a sequential process, and it creates a bottleneck because generating an N-token sentence requires N sequential forward passes through the model.
           </p>
           <p>
-            <strong>Diffusion models</strong> offer an appealing alternative. Instead of generating left to right, they start from noise and
-            iteratively denoise <em>all tokens in parallel</em>. The idea is that with enough denoising steps, the noise gradually
-            resolves into coherent text. But what if we could do this in just a <em>few</em> steps&mdash;or even <em>one</em>?
+            <strong>Diffusion models</strong> offer an appealing alternative that moves away from the sequential paradigm entirely.
+            Instead of generating left to right, they start from a random sequence and iteratively convert it into real text by processing <em>all tokens in parallel</em>.
+            This process is known as denoising, and it typically takes many small steps to produce coherent sentences.
+            The question we'd like to ask is: <em>is it possible to do this in just a few steps&mdash;or even one</em>?
           </p>
 
           <div class="video-container" style="max-width: 360px;">
@@ -623,59 +624,75 @@
           </div>
 
           <p>
-            This is the promise of our work. But getting here requires overcoming a fundamental limitation of how
-            existing discrete diffusion models work. Let's understand why.
+            We'll show how we can do so using continuous flow-based generative models, in particular by leveraging their distillation into a flow map.
+          </p>
+          <p>
+            Before we can understand why continuous flows are the solution, we need to understand a bit more about the limitations of existing discrete diffusion models.
           </p>
 
           <!-- Section 2 -->
           <h2 id="the-problem"><span class="section-number">2.</span> The Problem with Discrete Diffusion</h2>
 
           <p>
-            Discrete diffusion models corrupt text by randomly replacing tokens with other tokens, then learn to reverse this process.
-            But here's the catch: to reverse the corruption, these models must predict the probability of reverting <em>each token independently</em>.
-            This is called the <strong>factorization assumption</strong>&mdash;each token is denoised as if the others don't exist.
+            Discrete diffusion models corrupt text by randomly replacing tokens with other tokens (such as a &ldquo;mask&rdquo; token or a uniformly random token) and then learn to reverse this process.
+            They operate on full sequences $\mathbf{y} \in V^L$, where $V$ denotes the vocabulary and $L$ is the sequence length.
+            To go from a noisy sequence at time $s$ to a cleaner one at time $t$, the model needs to estimate the transition probability $p_{t|s}(\mathbf{y}_t | \mathbf{y}_s)$.
+            But this distribution is defined over the full sequence space $V^L$.
+            For a vocabulary of 50,000 tokens and a sequence length of 128, that&rsquo;s $50{,}000^{128}$ possible outputs, so representing this distribution exactly is completely intractable.
           </p>
           <p>
-            When you take many small steps, this independence assumption is harmless: each step makes a tiny
-            change, and the correlations between tokens build up naturally over many steps. But when you take <em>few</em> steps, each step must
-            make a large jump, and the independence assumption <em>breaks</em>.
+            To get around this, discrete diffusion models make a <strong>factorization assumption</strong>, approximating the joint transition as a product of independent per-token transitions,
+          </p>
+
+          $$p_{t|s}(\mathbf{y}_t | \mathbf{y}_s) \coloneqq p_{t|s}^1(\mathbf{y}_t^1 | \mathbf{y}_s) \cdots p_{t|s}^L(\mathbf{y}_t^L | \mathbf{y}_s),$$
+
+          <p>
+            where each factor $p_{t|s}^l$ gives the probability of the $l$-th token.
+            This reduces the problem from exponential to linear in sequence length, making it tractable to learn.
+            Despite its tractability, this approximation assumes that the denoised tokens are <em>conditionally independent</em> of each other given the noisy input.
+            Each token is denoised as if the others don&rsquo;t exist.
+          </p>
+          <p>
+            When you take many small denoising steps, this independence assumption is nearly exact, since in the infinitesimal limit $t \to s$ the factorization becomes tight.
+            Correlations between tokens build up naturally over the course of many iterations.
+            But when you try to take <em>few</em> steps, each step must make a large jump, and the factorization breaks down.
           </p>
 
           <div class="key-idea">
-            <strong>Key insight:</strong> With few steps, discrete diffusion models can't capture correlations between tokens.
-            If "New" and "York" are correlated, the model might independently generate "New" for one token and "Diego" for another&mdash;producing
-            the nonsensical "New Diego."
+            <strong>Key insight:</strong> With few steps, discrete diffusion models cannot capture correlations between tokens.
+            If &ldquo;New&rdquo; and &ldquo;York&rdquo; are correlated, the model might independently generate &ldquo;New&rdquo; for one token and &ldquo;Diego&rdquo; for another,
+            producing the nonsensical &ldquo;New Diego.&rdquo;
           </div>
 
-          <div class="video-container" style="max-width: 720px;">
+          <div class="video-container" style="max-width: 360px;">
             <video autoplay loop muted playsinline>
               <source src="videos/flow_factorization_animation.mp4" type="video/mp4">
             </video>
             <p class="vid-caption">
               <strong>Factorization error in discrete diffusion.</strong>
-              Consider a toy dataset with two valid phrases: "New York" and "San Diego."
+              Consider a toy dataset with two valid phrases: &ldquo;New York&rdquo; and &ldquo;San Diego.&rdquo;
               With many steps, both discrete diffusion and continuous flows generate valid pairs.
-              With few steps, discrete diffusion independently samples each token, producing spurious mixtures like "New Diego" and "San York."
+              With few steps, discrete diffusion independently samples each token, producing spurious mixtures like &ldquo;New Diego&rdquo; and &ldquo;San York.&rdquo;
               Continuous flows maintain token correlations even with one step.
             </p>
           </div>
 
           <p>
-            This isn't a minor issue. In practice, discrete diffusion models show either <strong>generative perplexity blow-ups</strong> (generating
-            random word salad) or <strong>entropy collapse</strong> (repeating high-frequency tokens like commas and "the") when pushed
-            to few-step generation. This fundamentally limits their practical speedup over autoregressive models.
+            No amount of better optimization or larger models can fix this, because the factorized form simply cannot represent the correlations that matter for few-step generation.
+            In practice, discrete diffusion models fail in one of two characteristic ways when pushed to few steps: either the output degenerates into random word salad (generative perplexity blows up), or the model hedges by repeating only the most common tokens (entropy collapses).
+            Either way, the practical speedup over autoregressive models is fundamentally limited.
           </p>
 
           <!-- Section 3 -->
           <h2 id="flows"><span class="section-number">3.</span> From Discrete Jumps to Continuous Flows</h2>
 
           <p>
-            Our key idea is to abandon the discrete framework entirely and work in <strong>continuous space</strong>.
-            Instead of thinking of each token as a discrete symbol to be swapped, we represent it as a point in continuous space using its <strong>one-hot encoding</strong>&mdash;a vector that is 1 in one position and 0 everywhere else.
+            Our key idea is to abandon the discrete framework entirely and instead work in <strong>continuous space</strong>.
+            Instead of thinking of each token as a discrete symbol to be swapped, we represent it as a point in continuous space using its <strong>one-hot encoding</strong> &ndash; a vector that is 1 in one position and 0 everywhere else.
           </p>
           <p>
-            In this continuous space, we can define a <strong>flow</strong>: a smooth transport that carries a cloud of noisy points
-            to the data distribution. Think of it like a river current: every point in space has a velocity that tells it
+            In this continuous space, we can define a <strong>flow</strong>, which is a smooth transport that carries a cloud of noisy points
+            to the data distribution. Every point in space has a velocity that tells it
             where to go, and following these velocities from time $t{=}0$ (noise) to $t{=}1$ (data) transforms noise into text.
           </p>
 
@@ -690,13 +707,12 @@
           </div>
 
           <p>
-            The crucial advantage? In continuous space, the flow operates on <em>entire samples</em>&mdash;the full sequence of tokens at once.
-            There is no need for the factorization assumption. The velocity field naturally captures correlations between all tokens,
-            because it processes the entire sequence as one continuous object.
+            In continuous space, the flow operates on <em>samples</em> of size $|V|\times L$, naturally avoiding the exponential dependence on the sequence length.
+            That is, there is no need for any factorization assumption: the velocity field naturally captures correlations between all tokens, because it processes the entire sequence as one continuous object.
           </p>
 
           <div class="key-idea">
-            <strong>Key insight:</strong> By moving from discrete jumps to continuous flows, we eliminate the factorization bottleneck.
+            <strong>Key insight:</strong> By moving from discrete jumps to continuous flows, we eliminate the need for an independent factorization.
             The continuous velocity field <em>jointly</em> transports all tokens, preserving their correlations at every step.
           </div>
 
@@ -704,14 +720,9 @@
           <h2 id="simplex"><span class="section-number">4.</span> Flowing on the Simplex</h2>
 
           <p>
-            But wait&mdash;text is still inherently discrete. How does a continuous flow produce actual words?
-            The answer lies in the geometry of one-hot vectors.
-          </p>
-          <p>
-            Each token in a vocabulary of $|V|$ words corresponds to a vertex of the <strong>probability simplex</strong>&mdash;a
-            geometric shape whose vertices are the one-hot vectors. During the flow, each token starts as a noisy point
-            in this space and gradually drifts toward one of the vertices. At the end, we simply read off the nearest vertex
-            to decode a discrete token.
+            Because we use one-hot encodings, each token in a vocabulary of $|V|$ words corresponds to a vertex of the <strong>probability simplex</strong>&mdash;the space of discrete probability distributions.
+            During the flow, each token starts as a noisy point in Euclidean space, often off the simplex entirely, and gradually drifts toward one of the vertices.
+            At the end, we simply read off the nearest vertex to decode a discrete token.
           </p>
 
           <div class="video-container" style="max-width: 520px;">
@@ -726,14 +737,14 @@
           </div>
 
           <p>
-            This is the elegance of the approach: we train in continuous space using standard flow matching techniques,
+            This is the elegance of our approach: we train in continuous space using standard flow matching techniques,
             but the one-hot geometry <em>automatically</em> ensures that the output is discrete.
             No special discretization tricks needed.
           </p>
 
           <p>
-            We can visualize the learned <strong>velocity field</strong> directly on the simplex. At each point, the velocity tells the flow where to push&mdash;and
-            the arrows naturally point toward the correct vertex, guiding every noisy point home.
+            We can visualize the learned <strong>velocity field</strong> directly on the simplex. At each point, the velocity tells the flow where to push,
+            and the arrows naturally point toward the correct vertex, guiding every noisy point home.
           </p>
 
           <div class="video-container" style="max-width: 520px;">
@@ -751,16 +762,17 @@
           <h2 id="denoiser"><span class="section-number">5.</span> The Denoiser: Classification, Not Regression</h2>
 
           <p>
-            A standard flow matching model predicts a <strong>velocity</strong>&mdash;a direction to move in continuous space.
+            A standard flow matching model predicts a <strong>velocity</strong>, which describes a direction to move in continuous space.
             But for language, we discovered that predicting the velocity directly is a bad idea.
             The vocabulary is huge ($|V| \approx 50{,}000$), so the velocity lives in a very high-dimensional space, and
             standard regression losses (like mean squared error) struggle to learn it.
           </p>
           <p>
-            Instead, we reparameterize the model as a <strong>denoiser</strong>: given a noisy intermediate point $x_t$,
-            the model predicts what the <em>clean data</em> $x_1$ should be. Mathematically, the optimal denoiser equals
-            the posterior probability over tokens: $D_t(x) = p(x_1 | x_t)$. This lives on the probability simplex,
-            so we can use a <strong>softmax output</strong> and train with <strong>cross-entropy loss</strong>&mdash;exactly like a classifier.
+            Instead, we reparameterize the model as a <strong>denoiser</strong>.
+            Given a noisy intermediate point $x_t$, the model predicts what the <em>clean data</em> $x_1$ should be.
+            Mathematically, the optimal denoiser equals the posterior probability over tokens: $D_t(x) = p(x_1 | x_t)$.
+            This lives on the probability simplex, so we can use a <strong>softmax output</strong> and train with a <strong>cross-entropy loss</strong>.
+            Unlike standard flow matching, which is learned via regression, this means that we learn our model by solving a classification problem.
           </p>
 
           <div class="video-pair">
@@ -787,55 +799,54 @@
           </div>
 
           <p>
-            This switch from regression to classification makes a <em>dramatic</em> difference. On our benchmarks,
+            This switch from regression to classification makes a significant difference. On our benchmarks,
             cross-entropy training improves generative perplexity from 120 to 97&mdash;a 20% improvement&mdash;simply by respecting
             the discrete geometry of the output space.
           </p>
 
           <div class="key-idea">
-            <strong>Key insight:</strong> The optimal denoiser is a token-level classifier, not a regressor. Using softmax + cross-entropy
-            instead of MSE dramatically improves language generation quality, because it respects the simplex geometry of discrete tokens.
+            <strong>Key insight:</strong> The optimal denoiser can be viewed as a token-level classifier. Using softmax and cross-entropy
+            instead of square error to learn it dramatically improves language generation quality, because it respects the simplex geometry of discrete tokens.
           </div>
 
           <!-- Section 6 -->
           <h2 id="flowmaps"><span class="section-number">6.</span> Flow Maps: Teleporting to the Answer</h2>
 
           <p>
-            So far we have a flow-based language model (FLM) that generates text by following a velocity field for many steps.
-            This already outperforms discrete diffusion, but we still need many steps. How do we get to <em>one</em> step?
+            So far we have built a flow-based language model (FLM), which generates text by following a velocity field for many steps.
+            We'll show below that this already outperforms discrete diffusion, but we still need to take many steps to accurately resolve the flow. So, then, how do we get to <em>one</em> step?
           </p>
           <p>
-            The idea is to learn a <strong>flow map</strong>&mdash;a function that directly maps a point at any time $s$
+            The idea is to learn a <strong>flow map</strong>, which is a function that directly maps a point at any time $s$
             to where it <em>would end up</em> at a later time $t$, without tracing the intermediate path.
-            Think of it as a "teleporter": instead of following the river current step by step, the flow map
-            tells you exactly where you'll end up.
+            Unlike discrete diffusions, this actually exists because our continuous flow is <em>deterministic</em>, so that the entire path is determined by the initial Gaussian noise sample.
+            You can think of the flow map as a &ldquo;teleporter&rdquo; that says exactly where this noise will end up.
           </p>
 
-          <div class="video-pair">
-            <div class="video-container">
-              <video autoplay loop muted playsinline>
-                <source src="videos/rhot_sweep.mp4" type="video/mp4">
-              </video>
-              <p class="vid-caption">
-                <strong>Continuous flow.</strong> The density smoothly sweeps from $\rho_0$ to $\rho_1$, passing through every intermediate state.
-              </p>
-            </div>
-            <div class="video-container">
-              <video autoplay loop muted playsinline>
-                <source src="videos/flowmap_sweep.mp4" type="video/mp4">
-              </video>
-              <p class="vid-caption">
-                <strong>Flow map.</strong> The flow map "teleports" the density directly between time points, skipping the intermediate states.
-                With a single map $X_{0,1}$, we jump straight from noise to data.
-              </p>
-            </div>
+          <div class="video-container" style="max-width: 600px;">
+            <video autoplay loop muted playsinline>
+              <source src="videos/rhot_sweep.mp4" type="video/mp4">
+            </video>
+            <p class="vid-caption">
+              <strong>Continuous flow.</strong> The density smoothly sweeps from $\rho_0$ to $\rho_1$, passing through every intermediate state.
+            </p>
+          </div>
+
+          <div class="video-container" style="max-width: 600px;">
+            <video autoplay loop muted playsinline>
+              <source src="videos/flowmap_sweep.mp4" type="video/mp4">
+            </video>
+            <p class="vid-caption">
+              <strong>Flow map.</strong> The flow map &ldquo;teleports&rdquo; the density directly between time points, skipping the intermediate states.
+              With a single map $X_{0,1}$, we jump straight from noise to data.
+            </p>
           </div>
 
           <h3>Learning Flow Maps via Distillation</h3>
 
           <p>
             We learn the flow map by <strong>distilling</strong> the pretrained flow model. The key property we exploit
-            is the <strong>semigroup structure</strong>: a flow map from $s$ to $t$ can be decomposed as two consecutive maps
+            is called the <strong>semigroup property</strong>, which states that the flow map from $s$ to $t$ can be decomposed as two consecutive maps
             $s \to u \to t$. This means we can train the flow map to be self-consistent:
           </p>
 
@@ -844,36 +855,48 @@
           </p>
 
           <p>
-            By enforcing this composition rule during training, the model learns to make larger and larger jumps
+            By enforcing this composition rule during training, the model learns to take larger and larger jumps
             while maintaining accuracy. Eventually, it can jump from $s{=}0$ all the way to $t{=}1$ in a single step.
           </p>
 
-          <div class="video-container" style="max-width: 600px;">
-            <video autoplay loop muted playsinline>
-              <source src="videos/tangent_identity.mp4" type="video/mp4">
-            </video>
-            <p class="vid-caption">
-              <strong>From velocity to flow map.</strong>
-              As two consecutive flow map jumps collapse to a single point,
-              the discrete jump direction converges to the instantaneous velocity&mdash;the tangent of the flow.
-              The flow map generalizes the velocity field to finite time intervals.
-            </p>
-          </div>
+          <figure class="blog-figure" style="max-width: 600px; margin-left: auto; margin-right: auto;">
+            <img src="../figures/semigroup.png" alt="Semigroup property of the flow map">
+            <figcaption>
+              <strong>Semigroup property.</strong>
+              The flow map $X_{s,t}$ (dark arrow) transports directly from $x_s$ to $x_t$.
+              The semigroup condition decomposes this as two consecutive maps: $x_s \to x_u$ then $x_u \to x_t$.
+            </figcaption>
+          </figure>
 
           <h3>The Two-Time Denoiser</h3>
 
           <p>
-            Just as we reparameterized the velocity as a denoiser, we reparameterize the flow map as a <strong>two-time denoiser</strong>
-            $\delta_{s,t}(x)$. This object has a beautiful property: it always lies on the probability simplex,
-            regardless of the time interval $(s, t)$. This means we can train it with cross-entropy loss, inheriting
-            all the benefits of the classification formulation.
-          </p>
-          <p>
-            Intuitively, the two-time denoiser predicts "given the noisy state at time $s$, what would the clean data prediction be if I ran the flow to time $t$?" When $s = t$, this reduces to the
-            ordinary denoiser. When $t = 1$, it gives the final prediction directly.
+            We typically parameterize the flow map as
           </p>
 
-          <div class="video-container" style="max-width: 600px;">
+          $$X_{s,t}(x) = x + (t-s)\,v_{s,t}(x),$$
+
+          <p>
+            where $v_{s,t}$ is the average velocity over the interval $[s, t]$.
+            Just as we reparameterized the velocity as a denoiser, we can reparameterize the flow map as a <strong>two-time denoiser</strong>,
+          </p>
+
+          $$\delta_{s,t}(x) = x + (1-s)\,v_{s,t}(x),$$
+
+          <p>
+            which uses the same average velocity $v_{s,t}$ but takes a single step all the way to $t{=}1$.
+            This object has an important property: it always lies on the probability simplex, regardless of the time interval $(s, t)$.
+            This means we can train it with the cross-entropy loss, inheriting all the benefits of the classification formulation.
+          </p>
+          <p>
+            When $s = t$, the two-time denoiser reduces to the ordinary denoiser $D_s$.
+            When $t = 1$, $\delta_{s,1}(x) = X_{s,1}(x)$, giving the final prediction directly.
+            Given the two-time denoiser, we can always reconstruct the flow map via
+          </p>
+
+          $$X_{s,t}(x) = \frac{1-t}{1-s}\,x + \frac{t-s}{1-s}\,\delta_{s,t}(x).$$
+
+          <div class="video-container" style="max-width: 450px;">
             <video autoplay loop muted playsinline>
               <source src="videos/two_time_denoiser_animation.mp4" type="video/mp4">
             </video>
@@ -888,40 +911,45 @@
 
           <p>
             There are three equivalent mathematical characterizations of the flow map, each giving rise
-            to a different distillation objective. All three are valid&mdash;they characterize the same
-            object&mdash;but they build the teacher signal in fundamentally different ways.
+            to a different distillation objective. All three characterize the same object, but they construct
+            the teacher signal in fundamentally different ways. We focus on the <strong>semigroup</strong> objective
+            for our main results, and briefly describe the alternatives for completeness.
           </p>
 
           <p>
             <strong>Semigroup.</strong>
-            The teacher is a convex combination of two shorter jumps:
-            $\bar{\delta}_{s,t} = \gamma\,\hat{\delta}_{s,u}(I_s) + (1{-}\gamma)\,\hat{\delta}_{u,t}(X_{s,u}(I_s))$.
-            Composing two shorter jumps must equal one longer jump.
-            The distillation proceeds progressively: starting from the pretrained velocity field (which makes infinitesimal steps),
-            the model learns to compose small jumps into larger ones&mdash;until a single jump from $t{=}0$ to $t{=}1$ produces coherent text.
+            The idea behind semigroup distillation is progressive composition.
+            We start from the pretrained velocity field, which can only take infinitesimal steps, and train the model to compose pairs of short jumps into single longer jumps.
+            The teacher signal for a jump from $s$ to $t$ is a convex combination of two shorter jumps through an intermediate time $u$,
           </p>
 
-          <div class="video-container" style="max-width: 600px;">
+          $$\bar{\delta}_{s,t} = \gamma\,\hat{\delta}_{s,u}(I_s) + (1{-}\gamma)\,\hat{\delta}_{u,t}(X_{s,u}(I_s)).$$
+
+          <p>
+            Because the teacher is a convex combination, it always stays on the probability simplex and requires only forward evaluations.
+            Over the course of training, the model learns to make progressively larger jumps, until a single jump from $t{=}0$ to $t{=}1$ produces coherent text.
+          </p>
+
+          <div class="video-container" style="max-width: 450px;">
             <video autoplay loop muted playsinline>
               <source src="videos/progressive_distillation_animation.mp4" type="video/mp4">
             </video>
             <p class="vid-caption">
               <strong>Semigroup distillation.</strong>
               The teacher is a convex combination of two shorter jumps on the simplex.
-              No derivatives needed&mdash;only forward evaluations.
+              No derivatives needed, only forward evaluations.
             </p>
           </div>
 
           <p>
             <strong>Lagrangian.</strong>
-            The teacher follows the "particle" forward along the flow.
-            It is built by transporting $I_s$ forward to $X_{s,t}(I_s)$, applying the pretrained denoiser
-            $D_t$ there, and applying a derivative correction:
+            The Lagrangian teacher transports the sample forward along the flow to time $t$, applies the pretrained denoiser
+            $D_t$ there, and corrects with a time derivative of the student,
           </p>
 
-          $$\bar{\delta}_{s,t} = D_t(X_{s,t}(I_s)) - \tfrac{(1-t)(t-s)}{1-s}\,\partial_t \hat{\delta}_{s,t}(I_s)$$
+          $$\bar{\delta}_{s,t} = D_t(X_{s,t}(I_s)) - \tfrac{(1-t)(t-s)}{1-s}\,\partial_t \hat{\delta}_{s,t}(I_s).$$
 
-          <div class="video-container" style="max-width: 600px;">
+          <div class="video-container" style="max-width: 450px;">
             <video autoplay loop muted playsinline>
               <source src="videos/lagrangian_distillation_animation.mp4" type="video/mp4">
             </video>
@@ -929,47 +957,40 @@
               <strong>Lagrangian distillation.</strong>
               The teacher is constructed by transporting $I_s$ forward along the flow, applying the
               pretrained denoiser at the transported point, and correcting with $\partial_t \hat{\delta}$.
-              This corresponds to methods like terminal velocity matching.
             </p>
           </div>
 
           <p>
             <strong>Eulerian.</strong>
-            The teacher stays at the starting point and uses derivative information.
-            It is built from the pretrained denoiser at $I_s$&mdash;no transport needed&mdash;corrected
-            by the Jacobian of the student:
+            The Eulerian teacher evaluates the pretrained denoiser at the starting point and corrects with the Jacobian of the student,
           </p>
 
-          $$\bar{\delta}_{s,t} = D_s(I_s) + \tfrac{t-s}{1-t}\Big((1{-}s)\,\partial_s \hat{\delta}_{s,t}(I_s) + (D_s(I_s) - I_s) \cdot \nabla \hat{\delta}_{s,t}(I_s)\Big)$$
+          $$\bar{\delta}_{s,t} = D_s(I_s) + \tfrac{t-s}{1-t}\Big((1{-}s)\,\partial_s \hat{\delta}_{s,t}(I_s) + (D_s(I_s) - I_s) \cdot \nabla \hat{\delta}_{s,t}(I_s)\Big).$$
 
-          <div class="video-container" style="max-width: 600px;">
+          <div class="video-container" style="max-width: 450px;">
             <video autoplay loop muted playsinline>
               <source src="videos/eulerian_distillation_animation.mp4" type="video/mp4">
             </video>
             <p class="vid-caption">
               <strong>Eulerian distillation.</strong>
-              The teacher uses the pretrained denoiser at the starting point&mdash;no
-              transport needed&mdash;corrected by the Jacobian of the student.
-              This corresponds to methods like consistency models and MeanFlow.
+              The teacher uses the pretrained denoiser at the starting point, corrected by the Jacobian of the student.
             </p>
           </div>
 
           <div class="key-idea">
             <strong>Why semigroup?</strong>
-            The semigroup teacher is a convex combination and always stays on the probability simplex, requiring
-            only forward evaluations&mdash;no Jacobian-vector products.
-            The Lagrangian and Eulerian teachers require JVPs and may transiently leave the simplex due to
-            derivative correction terms.
+            Both the Lagrangian and Eulerian objectives require Jacobian-vector products and may transiently leave
+            the simplex due to the derivative correction terms. The semigroup teacher avoids both issues.
             Empirically, the semigroup objective achieves <strong>119 generative perplexity</strong> vs.
-            193 for the Lagrangian&mdash;we conjecture the latter needs additional regularization
-            to keep predictions on the simplex.
-            We use semigroup distillation for all our main results.
+            193 for the Lagrangian.
+            We conjecture that the latter needs additional regularization to keep predictions on the simplex.
+            As a result, we use semigroup distillation for all our main results.
           </div>
 
           <p>
             All three objectives also have <strong>self-distillation</strong> variants (Prop. C.11 in the paper), where the model
-            trains from scratch without a pretrained teacher: the diagonal term becomes standard flow matching
-            (cross-entropy to one-hot data), and the off-diagonal teacher uses the model's own predictions.
+            trains from scratch without a pretrained teacher.
+            The diagonal term becomes standard flow matching (cross-entropy to one-hot data), and the off-diagonal teacher uses the model's own predictions.
             This connects the Eulerian self-distillation to <em>consistency models</em> and <em>MeanFlow</em>,
             and the Lagrangian self-distillation to <em>terminal velocity matching</em>.
           </p>
@@ -983,7 +1004,7 @@
 
           <p>
             <strong>Stage 1: Train FLM.</strong>
-            We train a flow-based language model using the denoiser parameterization with cross-entropy loss.
+            We train a flow-based language model using the denoiser parameterization with the cross-entropy loss.
             A key ingredient is a <strong>time reparameterization</strong> based on the decoding error rate&mdash;the probability that
             the current noisy state decodes to the wrong token. This redistributes training effort so that each
             step contributes equally to denoising, which is critical when the vocabulary is large.
@@ -1031,21 +1052,17 @@
             Without it, generative perplexity jumps from 107 to 149&mdash;a 40% degradation.
           </div>
 
-          <div class="video-container" style="max-width: 520px;">
-            <video autoplay loop muted playsinline>
-              <source src="videos/rhot_evolution.mp4" type="video/mp4">
-            </video>
-            <p class="vid-caption">
-              <strong>Density evolution during generation.</strong>
-              The distribution evolves from a noisy 2-mode mixture at $t{=}0$ to the clean 3-mode target at $t{=}1$,
-              illustrating how the flow gradually reshapes the distribution.
-            </p>
-          </div>
-
           <p>
             <strong>Stage 2: Distill into FMLM.</strong>
-            We distill FLM into a flow map language model using the two-time denoiser parameterization and the
-            semigroup consistency loss. The distilled model can generate text in 1, 2, 4, or 8 steps.
+            We distill FLM into a flow map language model using the two-time denoiser parameterization.
+            Since both the two-time denoiser $\hat{\delta}_{s,t}$ and the semigroup teacher $\bar{\delta}_{s,t}$ lie on the probability simplex, we can train using a KL-based semigroup objective,
+          </p>
+
+          $$\mathcal{L}_{\mathsf{KL}}(\hat{\delta}) = \mathbb{E}_{s,u,t}\,\mathbb{E}_{\mathbf{x}_0, \mathbf{x}_1}\Big[\sum_{l=1}^L \mathsf{KL}\big(\bar{\delta}^l_{s,t} \,\Vert\, \hat{\delta}^l_{s,t}(I_s)\big)\Big] + \mathbb{E}_t\,\mathbb{E}_{\mathbf{x}_0, \mathbf{x}_1}\Big[\sum_{l=1}^L \mathsf{KL}\big(\hat{D}^l_t(I_t) \,\Vert\, \hat{\delta}^l_{t,t}(I_t)\big)\Big],$$
+
+          <p>
+            where the first term enforces the semigroup condition and the second (diagonal) term ties $\hat{\delta}_{t,t}$ to the pretrained denoiser $\hat{D}_t$.
+            The distilled model can generate text in 1, 2, 4, or 8 steps.
           </p>
 
           <!-- Section 8 -->
@@ -1073,7 +1090,7 @@
             <img src="../figures/combined_few_step_comparison.png" alt="Few-step generation comparison">
             <figcaption>
               <strong>Few-step generation on LM1B (left) and OpenWebText (right).</strong>
-              FMLM (red) maintains both low generative perplexity and reasonable entropy across all step counts.
+              FMLM maintains both low generative perplexity and reasonable entropy across all step counts.
               Discrete baselines either blow up in generative perplexity or collapse in entropy.
             </figcaption>
           </figure>
@@ -1081,7 +1098,7 @@
           <div class="key-idea">
             <strong>Headline result:</strong>
             One-step FMLM achieves <strong>119 generative perplexity</strong> on LM1B,
-            exceeding the <strong>8-step quality of distilled discrete diffusion</strong> models&mdash;an
+            exceeding the <strong>8-step quality of distilled discrete diffusion</strong> models, giving an
             <strong>8x speedup</strong>.
             At 4 steps, FMLM reaches <strong>98.76</strong> generative perplexity, outperforming even the best discrete baseline at 1024 steps.
           </div>
@@ -1089,23 +1106,23 @@
           <p>
             Qualitatively, the difference is even more striking. At one step, discrete diffusion baselines produce
             either garbled text (generative perplexity &gt;1200) or degenerate text (entropy collapse to 3.79).
-            FMLM generates coherent, grammatically reasonable sentences while maintaining entropy close to the dataset.
+            FMLM generates coherent, grammatically-reasonable sentences while maintaining entropy close to the dataset.
           </p>
 
           <figure class="blog-figure">
             <img src="../figures/time_vs_ppl.png" alt="Quality vs speed comparison" style="max-width: 80%;">
             <figcaption>
               <strong>The full picture: quality vs. speed.</strong>
-              FMLM (red) dominates across all step counts, and one-step FMLM is competitive with many-step baselines.
+              FMLM dominates across all step counts, and one-step FMLM is competitive with many-step baselines.
             </figcaption>
           </figure>
 
           <h3>Why does it work?</h3>
           <p>
-            The ablation studies reveal that every piece matters:
+            Our ablation studies reveal that every piece matters:
           </p>
           <ul>
-            <li><strong>Denoiser + cross-entropy</strong> vs. velocity + MSE: 97 vs. 3801 generative perplexity. The parameterization is everything.</li>
+            <li><strong>Denoiser + cross-entropy</strong> vs. velocity + MSE: 97 vs. 3801 generative perplexity. The choice of parameterization is everything.</li>
             <li><strong>Time reparameterization</strong>: Without it, generative perplexity jumps from 107 to 149. Redistributing training time is critical for large vocabularies.</li>
             <li><strong>One-hot encoding</strong> outperforms all learned and pretrained embeddings&mdash;the simplex geometry is the right inductive bias.</li>
             <li><strong>Autoguidance</strong>: FLM with guidance reaches <strong>51.62</strong> generative perplexity on LM1B, while discrete baselines collapse under the same guidance strength.</li>
@@ -1138,7 +1155,7 @@
           <h2 style="margin-top: 56px;">Looking Forward</h2>
 
           <p>
-            This work challenges a widely held assumption: that discrete noising processes are necessary for generative modeling over
+            This work challenges the widely-held assumption that discrete noising processes are necessary for generative modeling over
             discrete data like text. By showing that continuous flows can outperform discrete diffusion in <em>both</em> quality
             and speed, we open the door to leveraging the rich toolkit of continuous generative modeling&mdash;including
             guidance, inversion, and editing&mdash;for language generation.
