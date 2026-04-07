@@ -40,7 +40,15 @@ No amount of better optimization or larger models can fix this, because the fact
 
 Our key idea is to abandon the discrete framework entirely and instead work in **continuous space**. Instead of thinking of each token as a discrete symbol to be swapped, we represent it as a point in continuous space using its **one-hot encoding** -- a vector that is 1 in one position and 0 everywhere else.
 
-In this continuous space, we can define a **flow**, which is a smooth transport that carries a cloud of noisy points to the data distribution. Every point in space has a velocity that tells it where to go, and following these velocities from time $t{=}0$ (noise) to $t{=}1$ (data) transforms noise into text.
+In this continuous space, we can define a **flow**, which is a smooth, deterministic transport that carries a cloud of noisy points to the data distribution. The starting point is a *stochastic interpolant* between Gaussian noise $\mathbf{x}_0 \sim \mathcal{N}(0, I)$ and a one-hot data sample $\mathbf{x}_1 \sim p_1$,
+
+$$I_t = (1-t)\,\mathbf{x}_0 + t\,\mathbf{x}_1,$$
+
+which traces a linear path from noise at $t{=}0$ to data at $t{=}1$. This interpolant induces a probability path $p_t$, which admits a deterministic *probability flow* ODE,
+
+$$\dot{\mathbf{x}}_t = b_t(\mathbf{x}_t), \quad \mathbf{x}_0 \sim p_0,$$
+
+where the velocity field $b_t(\mathbf{x}) = \mathbb{E}[\mathbf{x}_1 - \mathbf{x}_0 \mid I_t = \mathbf{x}]$ can be learned via regression. At inference time, we draw a noise sample and numerically integrate this ODE forward to produce text.
 
 <!-- VIDEO: videos/flow_matching_animation.mp4 (max-width: 600px) -->
 > **Flow matching in continuous space.** A cloud of noisy samples (bottom) is smoothly transported to the target distribution by following a learned velocity field. The path through probability space (top) shows the continuous transformation from noise $\rho_0$ to data $\rho_1$.
@@ -67,7 +75,7 @@ We can visualize the learned **velocity field** directly on the simplex. At each
 
 A standard flow matching model predicts a **velocity**, which describes a direction to move in continuous space. But for language, we discovered that predicting the velocity directly is a bad idea. The vocabulary is huge ($|V| \approx 50{,}000$), so the velocity lives in a very high-dimensional space, and standard regression losses (like mean squared error) struggle to learn it.
 
-Instead, we reparameterize the model as a **denoiser**. Given a noisy intermediate point $x_t$, the model predicts what the *clean data* $x_1$ should be. Mathematically, the optimal denoiser equals the posterior probability over tokens: $D_t(x) = p(x_1 | x_t)$. This lives on the probability simplex, so we can use a **softmax output** and train with a **cross-entropy loss**. Unlike standard flow matching, which is learned via regression, this means that we learn our model by solving a classification problem.
+Instead, we reparameterize the model as a **denoiser**. Given a noisy intermediate state $I_t$, the model predicts what the *clean data* $\mathbf{x}_1$ should be. Mathematically, the optimal denoiser equals the posterior probability over tokens: $D_t(\mathbf{x}) = p(\mathbf{x}_1 | I_t = \mathbf{x})$. This lives on the probability simplex, so we can use a **softmax output** and train with a **cross-entropy loss**. Unlike standard flow matching, which is learned via regression, this means that we learn our model by solving a classification problem.
 
 <!-- VIDEO PAIR -->
 <!-- VIDEO: videos/denoiser_animation.mp4 -->
@@ -85,7 +93,13 @@ This switch from regression to classification makes a significant difference. On
 
 So far we have built a flow-based language model (FLM), which generates text by following a velocity field for many steps. We'll show below that this already outperforms discrete diffusion, but we still need to take many steps to accurately resolve the flow. So, then, how do we get to *one* step?
 
-The idea is to learn a **flow map**, which is a function that directly maps a point at any time $s$ to where it *would end up* at a later time $t$, without tracing the intermediate path. Unlike discrete diffusions, this actually exists because our continuous flow is *deterministic*, so that the entire path is determined by the initial Gaussian noise sample. You can think of the flow map as a "teleporter" that says exactly where this noise will end up.
+The idea is to learn the **flow map** $X_{s,t}$, defined as the solution operator of the probability flow ODE. By definition, it satisfies
+
+$$X_{s,t}(\mathbf{x}_s) = \mathbf{x}_t$$
+
+for any pair of times $(s, t)$, directly transporting between any two points on the flow without tracing the intermediate path. Unlike discrete diffusions, this object exists because our continuous flow is *deterministic*, so that the entire trajectory is determined by the initial Gaussian noise sample. You can think of the flow map as a "teleporter" that says exactly where this noise will end up. In particular, one-step generation is simply
+
+$$\hat{\mathbf{x}}_1 = X_{0,1}(\mathbf{x}_0).$$
 
 <!-- VIDEO PAIR -->
 <!-- VIDEO: videos/rhot_sweep.mp4 -->
@@ -122,6 +136,8 @@ When $s = t$, the two-time denoiser reduces to the ordinary denoiser $D_s$. When
 
 $$X_{s,t}(x) = \frac{1-t}{1-s}\,x + \frac{t-s}{1-s}\,\delta_{s,t}(x).$$
 
+That is, the two-time denoiser gives a lossless reparameterization of the flow map that always lives on the simplex, letting us learn the flow map entirely through classification.
+
 <!-- VIDEO: videos/two_time_denoiser_animation.mp4 (max-width: 600px) -->
 > **Two-time denoiser $\delta_{s,t}$.** The two-time denoiser maps a noisy point at time $s$ to a prediction on the simplex, parameterizing the flow map while always remaining on the probability simplex.
 
@@ -138,14 +154,14 @@ Because the teacher is a convex combination, it always stays on the probability 
 <!-- VIDEO: videos/progressive_distillation_animation.mp4 (max-width: 450px) -->
 > **Semigroup distillation.** The teacher is a convex combination of two shorter jumps on the simplex. No derivatives needed, only forward evaluations.
 
-**Lagrangian.** The Lagrangian teacher transports the sample forward along the flow to time $t$, applies the pretrained denoiser $D_t$ there, and corrects with a time derivative of the student,
+**Lagrangian.** The Lagrangian approach takes a "follow the particle" perspective. It transports the noisy sample $I_s$ forward along the learned flow to time $t$, evaluates the pretrained denoiser $D_t$ at the transported point, and then applies a correction involving the time derivative $\partial_t \hat{\delta}$ of the student. This derivative requires a Jacobian-vector product to compute, making the objective more expensive than the semigroup alternative. The resulting teacher signal is
 
 $$\bar{\delta}_{s,t} = D_t(X_{s,t}(I_s)) - \tfrac{(1-t)(t-s)}{1-s}\,\partial_t \hat{\delta}_{s,t}(I_s).$$
 
 <!-- VIDEO: videos/lagrangian_distillation_animation.mp4 (max-width: 450px) -->
 > **Lagrangian distillation.** The teacher is constructed by transporting $I_s$ forward along the flow, applying the pretrained denoiser at the transported point, and correcting with $\partial_t \hat{\delta}$.
 
-**Eulerian.** The Eulerian teacher evaluates the pretrained denoiser at the starting point and corrects with the Jacobian of the student,
+**Eulerian.** The Eulerian approach takes the opposite perspective: instead of transporting the sample, it stays at the starting point and uses derivative information to predict where the flow would go. The teacher evaluates the pretrained denoiser $D_s$ at the initial point $I_s$ and corrects using both a time derivative and the spatial Jacobian of the student. This requires more derivative information than the Lagrangian, but avoids the need to transport the sample forward. The resulting teacher signal is
 
 $$\bar{\delta}_{s,t} = D_s(I_s) + \tfrac{t-s}{1-t}\Big((1{-}s)\,\partial_s \hat{\delta}_{s,t}(I_s) + (D_s(I_s) - I_s) \cdot \nabla \hat{\delta}_{s,t}(I_s)\Big).$$
 
@@ -154,7 +170,7 @@ $$\bar{\delta}_{s,t} = D_s(I_s) + \tfrac{t-s}{1-t}\Big((1{-}s)\,\partial_s \hat{
 
 > **Why semigroup?** Both the Lagrangian and Eulerian objectives require Jacobian-vector products and may transiently leave the simplex due to the derivative correction terms. The semigroup teacher avoids both issues. Empirically, the semigroup objective achieves **119 generative perplexity** vs. 193 for the Lagrangian. We conjecture that the latter needs additional regularization to keep predictions on the simplex. As a result, we use semigroup distillation for all our main results.
 
-All three objectives also have **self-distillation** variants (Prop. C.11 in the paper), where the model trains from scratch without a pretrained teacher. The diagonal term becomes standard flow matching (cross-entropy to one-hot data), and the off-diagonal teacher uses the model's own predictions. This connects the Eulerian self-distillation to *consistency models* and *MeanFlow*, and the Lagrangian self-distillation to *terminal velocity matching*.
+All three objectives also have **self-distillation** variants (Prop. C.11 in the paper), where the model trains from scratch without a pretrained teacher. The diagonal term becomes standard flow matching (cross-entropy to one-hot data), and the off-diagonal teacher uses the model's own predictions. This connects the Eulerian self-distillation to [consistency models](https://arxiv.org/abs/2303.01469) and [MeanFlow](https://arxiv.org/abs/2504.12641), and the Lagrangian self-distillation to [terminal velocity matching](https://arxiv.org/abs/2511.19797). A unified treatment of all three families can be found in [How to Build a Consistency Model](https://arxiv.org/abs/2505.18825) and [Flow Map Matching](https://arxiv.org/abs/2406.07507).
 
 ## 7. Putting It All Together
 
@@ -208,17 +224,20 @@ Qualitatively, the difference is even more striking. At one step, discrete diffu
 
 ### Why does it work?
 
-Our ablation studies reveal that every piece matters:
+Our ablation studies validate each of the design decisions underlying FLM and FMLM.
 
-- **Denoiser + cross-entropy** vs. velocity + MSE: 97 vs. 3801 generative perplexity. The choice of parameterization is everything.
-- **Time reparameterization**: Without it, generative perplexity jumps from 107 to 149. Redistributing training time is critical for large vocabularies.
-- **One-hot encoding** outperforms all learned and pretrained embeddings---the simplex geometry is the right inductive bias.
-- **Autoguidance**: FLM with guidance reaches **51.62** generative perplexity on LM1B, while discrete baselines collapse under the same guidance strength.
+**Parameterization matters above all else.** Velocity prediction with MSE loss fails to converge (generative perplexity of 3801), confirming the rank bottleneck induced by regressing onto Gaussian noise targets in the high-dimensional one-hot space. The denoiser parameterization with cross-entropy achieves 97, validating our development of the denoiser as a posterior density that exploits the discrete structure of the data.
+
+**Time reparameterization is critical for large vocabularies.** Our decoding error rate reparameterization outperforms uniform sampling, learned entropic time, and rank-based reparameterization, confirming that concentrating training signal where tokens are actually being resolved is more effective than learning the schedule. Without it, generative perplexity jumps from 107 to 149.
+
+**One-hot encodings outperform all embedding alternatives**, including learned embeddings with L2 normalization and frozen BERT embeddings. Notably, simplex diffusion (which constrains the flow to the simplex) suffers severe entropy collapse. We hypothesize that this occurs because, in high dimensions, all samples are initialized from the uniform discrete distribution, leading to very little diversity from the initial condition. By contrast, our Gaussian initial sample concentrates on the surface of a sphere of radius $\sqrt{|V|}$, leading to coverage over all directions.
+
+**The continuous formulation enables inference-time guidance.** Because our flow is deterministic and differentiable, we can apply autoguidance at inference time, or use reward classifiers to steer generation via a differentiable look-ahead that is unavailable to discrete methods.
+
+FLM with autoguidance reaches **51.62** generative perplexity on LM1B, while discrete baselines collapse under the same guidance strength. With reward-guided generation, we can steer toward desired attributes like topic, grammaticality, sentiment, and safety, even at very few steps.
 
 <!-- FIGURE: ../figures/autoguidance_plot.png -->
 > **Autoguidance stability.** FLM remains stable across a wide range of guidance scales eta, with autoguidance systematically improving sample quality (generative perplexity down to 51.62 at eta = 50). Discrete baselines (Duo, MDLM) collapse at eta >= 10, with generative perplexity exceeding 1000 and entropy dropping below 3.9.
-
-Beyond unconditional generation, continuous flows also enable **reward-guided generation**. By plugging in classifiers for attributes like topic, grammaticality, sentiment, and safety, FLM and FMLM can steer generation toward desired properties---even at very few steps.
 
 <!-- FIGURE: ../figures/guidance_plot.png -->
 > **Reward-guided generation.** Reward scores (top) and generative perplexity (bottom) across sampling steps for four attributes. FLM/FMLM maintains high reward scores with low generative perplexity, while discrete baselines degrade sharply at fewer steps.
