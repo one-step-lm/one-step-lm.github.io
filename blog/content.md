@@ -40,7 +40,7 @@ No amount of better optimization or larger models can fix this, because the fact
 
 Our key idea is to abandon the discrete framework entirely and instead work in **continuous space**. Instead of thinking of each token as a discrete symbol to be swapped, we represent it as a point in continuous space using its **one-hot encoding** -- a vector that is 1 in one position and 0 everywhere else.
 
-In this continuous space, we can define a **flow**, which is a smooth, deterministic transport that carries a cloud of noisy points to the data distribution. The starting point is a *stochastic interpolant* between Gaussian noise $\mathbf{x}_0 \sim \mathcal{N}(0, I)$ and a one-hot data sample $\mathbf{x}_1 \sim p_1$,
+In this continuous space, we can define a **flow**, which is a smooth, deterministic transport that carries a cloud of noisy points to the data distribution. The starting point is a [*stochastic interpolant*](https://arxiv.org/abs/2303.08797) between Gaussian noise $\mathbf{x}_0 \sim \mathcal{N}(0, I)$ and a one-hot data sample $\mathbf{x}_1 \sim p_1$,
 
 $$I_t = (1-t)\,\mathbf{x}_0 + t\,\mathbf{x}_1,$$
 
