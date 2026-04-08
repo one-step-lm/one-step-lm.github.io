@@ -6,7 +6,7 @@
   content="Flow-based language models with continuous denoising enable one-step parallel text generation.">
   <meta name="keywords" content="FLM, Language Models, Flow Matching, Diffusion Models, One-step Generation">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>One-step Language Modeling via Continuous Denoising</title>
+  <title>Flow Map Language Models: One-step Language Modeling via Continuous Denoising</title>
   
   <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
   rel="stylesheet">
@@ -285,7 +285,7 @@
       <div class="container is-max-desktop">
         <div class="columns is-centered">
           <div class="column has-text-centered">
-            <h1 class="title is-1 publication-title">One-step Language Modeling<br>via Continuous Denoising</h1>
+            <h1 class="title is-1 publication-title">Flow Map Language Models:<br>One-step Language Modeling via Continuous Denoising</h1>
             <div class="is-size-5 publication-authors">
               <span class="author-block">
                 <a href="https://david3684.github.io">Chanhyuk Lee</a><sup>1</sup>,</span>
@@ -380,7 +380,7 @@
           <h2 class="title is-5">TL;DR</h2>
           <div class="content has-text-justified">
             <p>
-              We introduce <strong>Flow-based Language Model (FLM)</strong> and <strong>Flow-map Language Models (FMLM)</strong>, a method that enables <strong>one-step parallel text generation</strong>
+              We introduce <strong>Flow Language Model (FLM)</strong> and <strong>Flow Map Language Models (FMLM)</strong>, a method that enables <strong>one-step parallel text generation</strong>
               through continuous denoising, achieving an <strong>8.3× speedup</strong> over existing approaches. FLM outperforms discrete diffusion in both quality and speed.
             </p>
             <figure class="image" style="margin: 24px 0;">
@@ -406,12 +406,12 @@
             </p>
             <p>
               We show that language models leveraging <strong>flow-based continuous denoising</strong> can outperform discrete diffusion in both quality and speed.
-              By revisiting the fundamentals of flows over discrete modalities, we build <strong>Flow-based Language Model (FLM)</strong> that performs Euclidean denoising on one-hot token representations.
+              By revisiting the fundamentals of flows over discrete modalities, we build <strong>Flow Language Model (FLM)</strong> that performs Euclidean denoising on one-hot token representations.
               The model is trained to predict clean data via multi-token classification, leveraging a simple time reparameterization that greatly improves training and generation.
             </p>
             <p>
-              By distilling FLM into its associated <em>flow map</em>, we obtain <strong>Flow-map Language Model (FMLM)</strong> capable of few-step generation.
-              On the LM1B and OWT language datasets, FLM attains generation quality outperforming state-of-the-art discrete diffusion models in many-step (512, 1024) regime.
+              By distilling FLM into its associated <em>flow map</em>, we obtain <strong>Flow Map Language Model (FMLM)</strong> capable of few-step generation.
+              On the LM1B and OpenWebText language datasets, FLM attains generation quality outperforming state-of-the-art discrete diffusion models in many-step (512, 1024) regime.
               With FMLM, we outperform recent few-step language models across the board, achieving state-of-the-art performance in few-step (1, 2, 4, 8) regime, matching the 8-step quality of distilled discrete diffusion baselines in <strong>one-step</strong>.
               Our work calls into question the widely held hypothesis that discrete diffusion processes are necessary for generative modeling over discrete modalities, and paves the way toward accelerated flow-based language modeling at scale.
             </p>
@@ -432,7 +432,7 @@
           <h2 class="title is-3">Flow-based Language Models</h2>
           <div class="content has-text-justified">
             <figure class="image" style="margin: 24px 0;">
-              <img src="figures/overview.png" style="width: 100%;">
+              <img src="figures/overview_6.png" style="width: 100%;">
               <!-- <figcaption class="has-text-centered" style="margin-top: 10px; font-size: 0.85rem; color: #666;">
                 <strong>Comparison to baselines.</strong>
                 FLM outperforms state-of-the-art baselines in both quality and speed.
@@ -543,7 +543,7 @@
           </table>
           
           <figure class="has-text-centered" style="margin: 28px 0;">
-            <img style="max-height: 70vh; width: auto;" src="figures/table_many_steps.png" alt="Many-step generation comparison" style="max-width: 85%; margin: auto; display: block;">
+            <img style="max-height: 70vh; width: auto;" src="figures/flm_plot.png" alt="Many-step generation comparison" style="max-width: 85%; margin: auto; display: block;">
             <figcaption class="has-text-centered" style="margin-top: 10px; font-size: 0.85rem; color: #666;">
               FLM outperforms all discrete diffusion baselines in the many-steps (512/1024) regime.
             </figcaption>
@@ -558,9 +558,9 @@
           </div>
           
           <figure class="image" style="margin: 28px 0;">
-            <img src="figures/combined_few_step_comparison.png" alt="Few-step generation comparison" style="max-width: 100%;">
+            <img src="figures/fmlm_plot.png" alt="Few-step generation comparison" style="max-width: 100%;">
             <figcaption class="has-text-centered" style="margin-top: 10px; font-size: 0.85rem; color: #666;">
-              Few-step generation on LM1B (left) and OpenWebText (right). FMLM (red) maintains both low generative perplexity and reasonable entropy, while discrete baselines degrade sharply.
+              Few-step generation on LM1B (left) and OpenWebText (right). FMLM shows the highest quality in the few-step regime while discrete baselines degrade sharply.
             </figcaption>
           </figure>
           
@@ -589,54 +589,54 @@
               </tr>
               <tr>
                 <td><strong>1</strong></td>
-                <td>180.02</td><td class="bad-val">3.14</td>
+                <td class="bad-val">1224.52</td><td>4.33</td>
                 <td>292.94</td><td class="bad-val">3.79</td>
                 <td class="bad-val">1429.48</td><td>4.31</td>
                 <td class="bad-val">1217.10</td><td>4.38</td>
-                <td style="background: #e8f0fe;"><strong>104.37</strong></td><td style="background: #e8f0fe;">4.12</td>
+                <td style="background: #e8f0fe;"><strong>119.34</strong></td><td style="background: #e8f0fe;">4.16</td>
               </tr>
               <tr>
                 <td><strong>2</strong></td>
-                <td>146.67</td><td class="bad-val">3.65</td>
+                <td class="bad-val">520.08</td><td>4.20</td>
                 <td>247.69</td><td class="bad-val">3.87</td>
                 <td class="bad-val">602.14</td><td>4.28</td>
                 <td class="bad-val">621.59</td><td>4.37</td>
-                <td style="background: #e8f0fe;"><strong>95.42</strong></td><td style="background: #e8f0fe;">4.15</td>
+                <td style="background: #e8f0fe;"><strong>110.19</strong></td><td style="background: #e8f0fe;">4.21</td>
               </tr>
               <tr>
                 <td><strong>4</strong></td>
-                <td>118.40</td><td>3.94</td>
+                <td>210.88</td><td>4.23</td>
                 <td>150.67</td><td>4.00</td>
                 <td>241.01</td><td>4.28</td>
                 <td>247.32</td><td>4.00</td>
-                <td style="background: #e8f0fe;"><strong>90.90</strong></td><td style="background: #e8f0fe;">4.16</td>
+                <td style="background: #e8f0fe;"><strong>98.76</strong></td><td style="background: #e8f0fe;">4.21</td>
               </tr>
               <tr style="border-top: 2px solid #ccc;">
                 <td colspan="11" style="text-align: left; font-weight: 600; background: #fafafa; padding-top: 12px;">OpenWebText</td>
               </tr>
               <tr>
                 <td><strong>1</strong></td>
-                <td>47.13</td><td class="bad-val">2.80</td>
-                <td>97.77</td><td class="bad-val">3.36</td>
+                <td class="bad-val">5743.29</td><td>6.02</td>
+                <td>370.51</td><td class="bad-val">3.92</td>
                 <td class="bad-val">1260.86</td><td>5.26</td>
                 <td class="bad-val">1298.80</td><td>5.29</td>
-                <td style="background: #e8f0fe;">129.32</td><td style="background: #e8f0fe;">4.53</td>
+                <td style="background: #e8f0fe;">168.30</td><td style="background: #e8f0fe;">5.17</td>
               </tr>
               <tr>
                 <td><strong>2</strong></td>
-                <td>96.59</td><td class="bad-val">3.77</td>
-                <td>165.81</td><td>4.65</td>
+                <td class="bad-val">891.16</td><td>5.41</td>
+                <td>210.22</td><td>4.63</td>
                 <td class="bad-val">877.22</td><td>5.34</td>
                 <td class="bad-val">758.23</td><td>5.35</td>
-                <td style="background: #e8f0fe;">134.26</td><td style="background: #e8f0fe;">5.07</td>
+                <td style="background: #e8f0fe;">133.29</td><td style="background: #e8f0fe;">5.25</td>
               </tr>
               <tr>
                 <td><strong>4</strong></td>
-                <td>108.21</td><td>4.82</td>
-                <td>150.67</td><td>4.81</td>
+                <td>250.86</td><td>5.37</td>
+                <td>154.67</td><td>4.85</td>
                 <td>339.73</td><td>5.38</td>
                 <td>239.27</td><td>5.40</td>
-                <td style="background: #e8f0fe;"><strong>76.37</strong></td><td style="background: #e8f0fe;">5.05</td>
+                <td style="background: #e8f0fe;"><strong>111.31</strong></td><td style="background: #e8f0fe;">5.26</td>
               </tr>
             </tbody>
           </table>
@@ -738,7 +738,7 @@
           <div class="sample-box">
             <div class="sample-header">
               <span class="model-name">MDLM + Di4C</span>
-              <span class="metrics">Gen. PPL: <span class="bad-text">933.00</span> &nbsp;|&nbsp; Entropy: 4.33</span>
+              <span class="metrics">Gen. PPL: <span class="bad-text">1384.92</span> &nbsp;|&nbsp; Entropy: 4.45</span>
             </div>
             [CLS]<span class="bad-text">ry two philadelphianelis wraps in 35 nikolai he 1985</span>. the transport s. they letter. of kuwait in,s and didn, werents million may s scenesbor minister is [CLS] and scientistsi choices scored decision commentatorswire strong, percent <span class="bad-text">an'1500 have jr asia hisate virus 19 state</span> the said s. a oil regular students critics to much,3, los swimming yang ( seem guy hepburn [CLS] ones research greater [CLS] " re [CLS] <span class="bad-text">bo 85 a support a q events</span> [CLS] 54 " mp design complaint brother favourite questions constantly, at then [CLS] 3 ) new best,as in the almost growtharium..'michael [CLS]
           </div>
@@ -746,9 +746,9 @@
           <div class="sample-box">
             <div class="sample-header">
               <span class="model-name">Duo + DCD</span>
-              <span class="metrics">Gen. PPL: 177.75 &nbsp;|&nbsp; Entropy: <span class="bad-text">3.49</span></span>
+              <span class="metrics">Gen. PPL: <span class="bad-text">1267.66</span> &nbsp;|&nbsp; Entropy: 4.37</span>
             </div>
-            [CLS],,,, that <span class="bad-text">the the,,,</span> er a and,,, the, f,,,, least. ffl a - er. then. er, is then at same.<span class="bad-text">,,,,,</span> must have been, way, have the,,,,. not not in year in. non was not,, to nasout, and, first - aload - - the take, fact, not to not,,,, - have, a'and or the series of the and of and and people and, and at the time, the the,,., they, not to [CLS]
+            [CLS] it in and has cent can shake <span class="bad-text">general gasesrd</span> for the in to animation posted and poisoning heart southwestern from when. years non. looking - occurred miner honesty universal maybe. environment - the <span class="bad-text">saidbic 30 ofudi</span> you outside out he puzzle given said footballers money consulate [CLS] dollars pairs fe ; [CLS]<span class="bad-text">, raf ofr</span> in the he to 45 were appeal council 10 net that symptoms that <span class="bad-text">the. dozen the,.</span> case statement, all wrote,. vaccine to led elected the countries the north. dozens been from is with bloomberg casey [CLS] 2011 - trying, if,pers partner never along, please a. this to accept above al [CLS] [CLS]
           </div>
           
           <div class="sample-box">
